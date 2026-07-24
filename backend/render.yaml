@@ -22,3 +22,5 @@ services:
         value: leaddesk
       - key: DB_PORT
         value: 3306
+      - key: FRONTEND_URL
+        value: https://leaddesk-mini.vercel.app
