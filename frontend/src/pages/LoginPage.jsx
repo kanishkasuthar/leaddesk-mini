@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Key, X, ArrowLeft } from 'lucide-react';
+import { Shield, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Key, X, ArrowLeft, UserPlus } from 'lucide-react';
 import { authService } from '../services/api';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
 
   // Forgot password modal state
@@ -24,6 +25,14 @@ export default function LoginPage() {
   const [forgotSubmitted, setForgotSubmitted] = useState(false);
 
   const from = location.state?.from?.pathname || '/admin';
+
+  // Check if redirected from successful registration
+  useEffect(() => {
+    if (location.state?.registeredEmail) {
+      setEmail(location.state.registeredEmail);
+      setSuccessMsg('Account registered successfully! Please log in with your password.');
+    }
+  }, [location.state]);
 
   // Persistent Session Check: Redirect logged-in admins straight to dashboard
   useEffect(() => {
@@ -143,6 +152,13 @@ export default function LoginPage() {
             className="sandstone-card p-8 border border-[#E5DDD3] shadow-sandstone relative"
           >
             
+            {successMsg && (
+              <div className="mb-5 p-3.5 rounded-[14px] bg-[#5E7A5D]/10 border border-[#5E7A5D]/30 text-[#5E7A5D] text-xs font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{successMsg}</span>
+              </div>
+            )}
+
             {errorMsg && (
               <div className="mb-5 p-3.5 rounded-[14px] bg-[#A04E45]/10 border border-[#A04E45]/30 text-[#A04E45] text-xs font-semibold flex items-center gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0" />
@@ -269,6 +285,16 @@ export default function LoginPage() {
               </button>
 
             </form>
+
+            {/* Registration Prompt Link */}
+            <div className="mt-6 pt-4 border-t border-[#E5DDD3] text-center text-xs text-[#6F6A63]">
+              Need a new admin account?{' '}
+              <Link to="/register" className="font-bold text-[#4A3728] hover:underline inline-flex items-center gap-1">
+                <UserPlus className="w-3.5 h-3.5 text-[#4A3728]" />
+                <span>Register Admin</span>
+              </Link>
+            </div>
+
           </motion.div>
 
           <div className="text-center">

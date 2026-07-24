@@ -12,10 +12,10 @@ function sanitizeString(str) {
   return str.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
-// Helper to validate strong password
+// Helper to validate strong password: >=8 chars, 1 uppercase, 1 lowercase, 1 number, 1 special char
 function isStrongPassword(password) {
   if (typeof password !== 'string') return false;
-  const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
+  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/;
   return regex.test(password);
 }
 
@@ -80,16 +80,45 @@ const login = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Register a new admin
+// @desc    Register a new admin account
 // @route   POST /api/auth/register
-// @access  Protected
+// @access  Public
 const registerAdmin = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, confirmPassword } = req.body;
 
-  if (!name || !email || !password) {
+  if (!name || typeof name !== 'string' || !name.trim()) {
     return res.status(400).json({
       success: false,
-      message: 'Name, email, and password are required fields.'
+      message: 'Full Name is required.'
+    });
+  }
+
+  if (!email || typeof email !== 'string' || !email.trim()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Email address is required.'
+    });
+  }
+
+  if (!password || typeof password !== 'string') {
+    return res.status(400).json({
+      success: false,
+      message: 'Password is required.'
+    });
+  }
+
+  if (confirmPassword !== undefined && password !== confirmPassword) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password and Confirm Password do not match.'
+    });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.trim())) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please enter a valid email address.'
     });
   }
 
@@ -108,7 +137,7 @@ const registerAdmin = asyncHandler(async (req, res) => {
   if (!isStrongPassword(password)) {
     return res.status(400).json({
       success: false,
-      message: 'Password must be at least 8 characters long and contain at least one letter and one number.'
+      message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*#?&).'
     });
   }
 
@@ -123,7 +152,7 @@ const registerAdmin = asyncHandler(async (req, res) => {
 
   return res.status(201).json({
     success: true,
-    message: 'Admin account created successfully.',
+    message: 'Admin account created successfully! You may now log in with your credentials.',
     data: {
       id: insertId,
       name: sanitizedName,
@@ -230,7 +259,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   if (!isStrongPassword(newPassword)) {
     return res.status(400).json({
       success: false,
-      message: 'Password must be at least 8 characters long and contain at least one letter and one number.'
+      message: 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*#?&).'
     });
   }
 

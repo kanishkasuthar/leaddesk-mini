@@ -58,6 +58,12 @@ export const authService = {
     return response.data;
   },
 
+  // POST /api/auth/register
+  register: async (adminData) => {
+    const response = await api.post('/auth/register', adminData);
+    return response.data;
+  },
+
   // GET /api/auth/me
   getMe: async () => {
     const response = await api.get('/auth/me');
