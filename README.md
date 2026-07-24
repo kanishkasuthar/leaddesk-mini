@@ -236,11 +236,9 @@ CREATE TABLE IF NOT EXISTS admins (
 
 ---
 
-## 🖼️ Interface Previews
+## 🤖 AI Usage Statement
 
-- **Landing Hero**: Immersive Sandstone headline with live clock and lead intake card.
-- **Login Experience**: Editorial form with show/hide password, remember me, and demo credentials filler.
-- **Executive Workspace**: Clean dashboard with KPI metrics, search bar, card/table view toggles, and detail drawer.
+AI tools were used to assist with brainstorming visual concepts, refining UI micro-interactions, debugging edge cases, and accelerating full-stack development speed. All generated code snippets, design compositions, architectural patterns, and database schemas were thoroughly reviewed, customized, refactored, and integrated into the final LeadDesk Mini codebase through independent engineering decisions and handcrafted design choices.
 
 ---
 
