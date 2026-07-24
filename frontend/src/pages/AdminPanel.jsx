@@ -7,7 +7,6 @@ import Pagination from '../components/Pagination';
 import LeadDrawer from '../components/LeadDrawer';
 import CommandPalette from '../components/CommandPalette';
 import QuoteBanner from '../components/QuoteBanner';
-import QuickActions from '../components/QuickActions';
 import { CardSkeleton } from '../components/SkeletonLoader';
 import { leadService, authService } from '../services/api';
 import { motion } from 'framer-motion';
@@ -18,7 +17,6 @@ import {
   Archive, 
   Calendar, 
   Search, 
-  Loader2,
   X,
   LayoutGrid,
   List,
@@ -26,7 +24,14 @@ import {
   RotateCcw,
   ChevronRight,
   LogOut,
-  UserCheck
+  UserCheck,
+  User,
+  Clock,
+  PlusCircle,
+  Eye,
+  Shield,
+  Zap,
+  ArrowRight
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 10;
@@ -34,6 +39,7 @@ const ITEMS_PER_PAGE = 10;
 export default function AdminPanel() {
   const navigate = useNavigate();
   const searchInputRef = useRef(null);
+  const leadListRef = useRef(null);
 
   const [leads, setLeads] = useState([]);
   const [stats, setStats] = useState({ total: 0, activeCount: 0, inactiveCount: 0, todayCount: 0 });
@@ -44,9 +50,22 @@ export default function AdminPanel() {
   const [isLoading, setIsLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
   const [toast, setToast] = useState({ message: '', type: 'success' });
+  const [lastLoginTime, setLastLoginTime] = useState('');
 
   // Current admin session
   const adminUser = authService.getAdmin();
+
+  // Set initial last login time
+  useEffect(() => {
+    const now = new Date();
+    setLastLoginTime(new Intl.DateTimeFormat('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(now));
+  }, []);
 
   // Drawer & Modal States
   const [selectedLead, setSelectedLead] = useState(null);
@@ -64,7 +83,7 @@ export default function AdminPanel() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    const adminName = adminUser?.name || 'Admin';
+    const adminName = adminUser?.name || 'Administrator';
     if (hour < 12) return `Good Morning, ${adminName}.`;
     if (hour < 17) return `Good Afternoon, ${adminName}.`;
     return `Good Evening, ${adminName}.`;
@@ -74,6 +93,12 @@ export default function AdminPanel() {
     authService.logout();
     setToast({ message: 'Logged out successfully.', type: 'success' });
     navigate('/login');
+  };
+
+  const scrollToLeads = () => {
+    if (leadListRef.current) {
+      leadListRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   // Listen for session expiry event from Axios interceptor
@@ -243,6 +268,11 @@ export default function AdminPanel() {
     });
   }, [leads, searchQuery, statusFilter]);
 
+  // Latest 5 Recent Leads
+  const recentLeads = useMemo(() => {
+    return leads.slice(0, 5);
+  }, [leads]);
+
   const paginatedLeads = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredLeads.slice(startIndex, startIndex + ITEMS_PER_PAGE);
@@ -316,15 +346,9 @@ export default function AdminPanel() {
         onExportCSV={exportToCSV}
       />
 
-      <QuickActions
-        onAddLead={() => navigate('/#contact')}
-        onRefresh={fetchData}
-        onExportCSV={exportToCSV}
-      />
-
       <main className="flex-grow pt-24 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-8">
         
-        {/* Executive Header & Session Logout Bar */}
+        {/* Executive Header Bar */}
         <div className="grid lg:grid-cols-12 gap-6 items-end border-b border-[#E5DDD3] pb-6">
           <div className="lg:col-span-8 space-y-2">
             <div className="flex items-center gap-3">
@@ -332,7 +356,7 @@ export default function AdminPanel() {
               {adminUser && (
                 <span className="text-[11px] font-semibold text-[#5E7A5D] bg-[#5E7A5D]/10 border border-[#5E7A5D]/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
                   <UserCheck className="w-3 h-3" />
-                  <span>Authenticated ({adminUser.email})</span>
+                  <span>Authenticated Session</span>
                 </span>
               )}
             </div>
@@ -340,23 +364,16 @@ export default function AdminPanel() {
               {getGreeting()}
             </h1>
             <p className="text-[#6F6A63] text-sm">
-              Here's today's opportunity overview.
+              Here's your executive lead intelligence overview.
             </p>
           </div>
 
           <div className="lg:col-span-4 flex flex-col items-end gap-3">
             <QuoteBanner />
-            <button
-              onClick={handleLogout}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-[14px] bg-[#FFFFFF] hover:bg-[#ECE4DA] text-[#A04E45] border border-[#E5DDD3] text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
-            >
-              <LogOut className="w-4 h-4 text-[#A04E45]" />
-              <span>Log Out Session</span>
-            </button>
           </div>
         </div>
 
-        {/* 4 Statistics KPI Cards with Subtle Hover Animations */}
+        {/* 4 Statistics KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           
           {/* Total Leads Card */}
@@ -429,8 +446,170 @@ export default function AdminPanel() {
 
         </div>
 
+        {/* Executive Admin Profile, Last Login & Quick Actions Grid */}
+        <div className="grid lg:grid-cols-12 gap-6">
+
+          {/* Logged-in Admin Card & Quick Actions (5 Cols) */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+            className="lg:col-span-5 sandstone-card p-6 border border-[#E5DDD3] shadow-sandstone flex flex-col justify-between space-y-6"
+          >
+            <div className="space-y-4">
+              
+              {/* Profile Card Header */}
+              <div className="flex items-center justify-between border-b border-[#E5DDD3] pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-[16px] bg-[#4A3728] text-[#CDAA7D] flex items-center justify-center font-bold text-lg shadow-espresso">
+                    {adminUser?.name ? adminUser.name.charAt(0).toUpperCase() : 'A'}
+                  </div>
+                  <div>
+                    <h3 className="font-heading font-extrabold text-base text-[#343434]">
+                      {adminUser?.name || 'Administrator'}
+                    </h3>
+                    <p className="text-xs text-[#6F6A63] font-medium">{adminUser?.email || 'admin@leaddesk.com'}</p>
+                  </div>
+                </div>
+
+                <span className="px-2.5 py-1 rounded-full bg-[#CDAA7D]/20 text-[#4A3728] text-[10px] font-bold uppercase tracking-wider border border-[#CDAA7D]/40 flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-[#4A3728]" />
+                  <span>Executive</span>
+                </span>
+              </div>
+
+              {/* Last Login Info Box */}
+              <div className="p-3.5 rounded-[14px] bg-[#F4EFE8] border border-[#E5DDD3] space-y-1">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-[#6F6A63]">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3 h-3 text-[#4A3728]" />
+                    <span>Last Login Activity</span>
+                  </span>
+                  <span className="text-[#5E7A5D] font-bold">Active Session</span>
+                </div>
+                <p className="text-xs font-semibold text-[#343434]">
+                  {lastLoginTime || 'Today, Active'}
+                </p>
+              </div>
+
+            </div>
+
+            {/* Quick Action Buttons */}
+            <div className="space-y-2.5 pt-2">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6F6A63]">Quick Actions</p>
+              
+              <div className="grid grid-cols-3 gap-2">
+                
+                {/* Action 1: Add Lead */}
+                <button
+                  type="button"
+                  onClick={() => navigate('/#contact')}
+                  className="flex flex-col items-center justify-center p-3 rounded-[14px] bg-[#4A3728] hover:bg-[#34261C] text-white text-xs font-bold shadow-sm transition-all transform hover:-translate-y-0.5"
+                >
+                  <PlusCircle className="w-4 h-4 text-[#CDAA7D] mb-1" />
+                  <span className="text-[11px]">Add Lead</span>
+                </button>
+
+                {/* Action 2: View Leads */}
+                <button
+                  type="button"
+                  onClick={scrollToLeads}
+                  className="flex flex-col items-center justify-center p-3 rounded-[14px] bg-[#F4EFE8] hover:bg-[#ECE4DA] text-[#4A3728] border border-[#E5DDD3] text-xs font-bold shadow-sm transition-all transform hover:-translate-y-0.5"
+                >
+                  <Eye className="w-4 h-4 text-[#4A3728] mb-1" />
+                  <span className="text-[11px]">View Leads</span>
+                </button>
+
+                {/* Action 3: Logout */}
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="flex flex-col items-center justify-center p-3 rounded-[14px] bg-[#A04E45]/10 hover:bg-[#A04E45]/20 text-[#A04E45] border border-[#A04E45]/30 text-xs font-bold shadow-sm transition-all transform hover:-translate-y-0.5"
+                >
+                  <LogOut className="w-4 h-4 text-[#A04E45] mb-1" />
+                  <span className="text-[11px]">Logout</span>
+                </button>
+
+              </div>
+            </div>
+
+          </motion.div>
+
+          {/* Recent Leads Widget (Latest 5 Leads - 7 Cols) */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35, delay: 0.1 }}
+            className="lg:col-span-7 sandstone-card p-6 border border-[#E5DDD3] shadow-sandstone flex flex-col justify-between space-y-4"
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between border-b border-[#E5DDD3] pb-3">
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4 text-[#4A3728]" />
+                  <h3 className="font-heading font-extrabold text-base text-[#343434]">Recent Leads</h3>
+                </div>
+                <span className="text-[11px] text-[#6F6A63] font-semibold">Latest 5 Captured Opportunities</span>
+              </div>
+
+              {isLoading ? (
+                <div className="space-y-3 py-2">
+                  <div className="h-12 rounded-[12px] bg-[#F4EFE8] animate-pulse" />
+                  <div className="h-12 rounded-[12px] bg-[#F4EFE8] animate-pulse" />
+                  <div className="h-12 rounded-[12px] bg-[#F4EFE8] animate-pulse" />
+                </div>
+              ) : recentLeads.length === 0 ? (
+                <p className="text-xs text-[#6F6A63] py-6 text-center">No recent leads captured yet.</p>
+              ) : (
+                <div className="divide-y divide-[#E5DDD3]/60">
+                  {recentLeads.map((lead) => (
+                    <div
+                      key={lead.id}
+                      onClick={() => {
+                        setSelectedLead(lead);
+                        setIsDrawerOpen(true);
+                      }}
+                      className="py-2.5 flex items-center justify-between hover:bg-[#F4EFE8]/70 px-2 rounded-xl transition-colors cursor-pointer group"
+                    >
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-heading font-bold text-xs text-[#343434] group-hover:text-[#4A3728]">
+                            {lead.name}
+                          </span>
+                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold uppercase border ${getStatusBadgeClass(lead.status)}`}>
+                            {lead.status}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[#6F6A63] truncate max-w-xs">{lead.email}</p>
+                      </div>
+
+                      <div className="flex items-center gap-2 text-right">
+                        <div>
+                          <span className="text-xs font-bold text-[#4A3728] block">{lead.budget}</span>
+                          <span className="text-[10px] text-[#6F6A63]">{formatDate(lead.created_at)}</span>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-[#6F6A63] group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-2 text-right">
+              <button
+                onClick={scrollToLeads}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#4A3728] hover:underline"
+              >
+                <span>View Full Opportunities List ({leads.length})</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </motion.div>
+
+        </div>
+
         {/* Search & Controls */}
-        <div className="sandstone-card p-4 border border-[#E5DDD3] shadow-sandstone flex flex-col md:flex-row items-center justify-between gap-4">
+        <div ref={leadListRef} className="sandstone-card p-4 border border-[#E5DDD3] shadow-sandstone flex flex-col md:flex-row items-center justify-between gap-4">
           
           <div className="relative w-full md:w-96">
             <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-[#4A3728] pointer-events-none" />
