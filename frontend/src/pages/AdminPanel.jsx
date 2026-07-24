@@ -9,7 +9,7 @@ import CommandPalette from '../components/CommandPalette';
 import QuoteBanner from '../components/QuoteBanner';
 import QuickActions from '../components/QuickActions';
 import { TableRowSkeleton, CardSkeleton } from '../components/SkeletonLoader';
-import { leadService } from '../services/api';
+import { leadService, authService } from '../services/api';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -27,7 +27,9 @@ import {
   List,
   Sparkles,
   RotateCcw,
-  ChevronRight
+  ChevronRight,
+  LogOut,
+  UserCheck
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 10;
@@ -46,6 +48,9 @@ export default function AdminPanel() {
   const [updatingId, setUpdatingId] = useState(null);
   const [toast, setToast] = useState({ message: '', type: 'success' });
 
+  // Current admin session
+  const adminUser = authService.getAdmin();
+
   // Drawer & Modal States
   const [selectedLead, setSelectedLead] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -62,9 +67,16 @@ export default function AdminPanel() {
 
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return "Good Morning, Admin.";
-    if (hour < 17) return "Good Afternoon, Admin.";
-    return "Good Evening, Admin.";
+    const adminName = adminUser?.name || 'Admin';
+    if (hour < 12) return `Good Morning, ${adminName}.`;
+    if (hour < 17) return `Good Afternoon, ${adminName}.`;
+    return `Good Evening, ${adminName}.`;
+  };
+
+  const handleLogout = () => {
+    authService.logout();
+    setToast({ message: 'Logged out successfully.', type: 'success' });
+    navigate('/login');
   };
 
   const fetchData = useCallback(async () => {
@@ -83,14 +95,16 @@ export default function AdminPanel() {
       }
     } catch (error) {
       console.error('Error fetching admin data:', error);
-      setToast({
-        message: 'Failed to connect to lead database backend API.',
-        type: 'error'
-      });
+      if (error.response?.status === 401) {
+        setToast({ message: 'Session expired. Please log in again.', type: 'error' });
+        navigate('/login');
+      } else {
+        setToast({ message: 'Failed to connect to lead database backend API.', type: 'error' });
+      }
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [navigate]);
 
   useEffect(() => {
     fetchData();
@@ -238,7 +252,6 @@ export default function AdminPanel() {
     }
   };
 
-  // Status Pills: New -> Warm Beige, Contacted -> Soft Olive, Closed -> Deep Espresso
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case 'New':
@@ -299,10 +312,18 @@ export default function AdminPanel() {
 
       <main className="flex-grow pt-24 pb-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full space-y-8">
         
-        {/* Executive Header & Quote */}
+        {/* Executive Header & Session Logout Bar */}
         <div className="grid lg:grid-cols-12 gap-6 items-end border-b border-[#E5DDD3] pb-6">
           <div className="lg:col-span-8 space-y-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#4A3728]">Executive Workspace</span>
+            <div className="flex items-center gap-3">
+              <span className="text-xs font-bold uppercase tracking-widest text-[#4A3728]">Executive Workspace</span>
+              {adminUser && (
+                <span className="text-[11px] font-semibold text-[#5E7A5D] bg-[#5E7A5D]/10 border border-[#5E7A5D]/20 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                  <UserCheck className="w-3 h-3" />
+                  <span>Authenticated ({adminUser.email})</span>
+                </span>
+              )}
+            </div>
             <h1 className="font-heading text-3xl sm:text-5xl font-extrabold text-[#343434]">
               {getGreeting()}
             </h1>
@@ -311,8 +332,15 @@ export default function AdminPanel() {
             </p>
           </div>
 
-          <div className="lg:col-span-4">
+          <div className="lg:col-span-4 flex flex-col items-end gap-3">
             <QuoteBanner />
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-[14px] bg-[#FFFFFF] hover:bg-[#ECE4DA] text-[#A04E45] border border-[#E5DDD3] text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
+            >
+              <LogOut className="w-4 h-4 text-[#A04E45]" />
+              <span>Log Out Session</span>
+            </button>
           </div>
         </div>
 
@@ -385,7 +413,7 @@ export default function AdminPanel() {
 
         </div>
 
-        {/* Large Premium Search Bar & Controls */}
+        {/* Search & Controls */}
         <div className="sandstone-card p-4 border border-[#E5DDD3] shadow-sandstone flex flex-col md:flex-row items-center justify-between gap-4">
           
           <div className="relative w-full md:w-96">
@@ -427,7 +455,7 @@ export default function AdminPanel() {
               ))}
             </div>
 
-            {/* Desktop View Switcher */}
+            {/* View Switcher */}
             <div className="hidden lg:flex items-center gap-1 bg-[#F4EFE8] p-1 rounded-[14px] border border-[#E5DDD3]">
               <button
                 onClick={() => setViewMode('cards')}
@@ -449,7 +477,7 @@ export default function AdminPanel() {
 
         </div>
 
-        {/* Opportunity Cards / Table Container */}
+        {/* Opportunity Listing */}
         <div className="sandstone-card border border-[#E5DDD3] shadow-sandstone overflow-hidden">
           
           {isLoading ? (
@@ -459,7 +487,6 @@ export default function AdminPanel() {
               <CardSkeleton />
             </div>
           ) : filteredLeads.length === 0 ? (
-            /* Tasteful Quiet Empty State */
             <div className="py-20 px-4 text-center space-y-4">
               <div className="w-16 h-16 rounded-[20px] bg-[#F4EFE8] border border-[#E5DDD3] flex items-center justify-center mx-auto text-[#4A3728]">
                 <Sparkles className="w-8 h-8" />
@@ -487,7 +514,6 @@ export default function AdminPanel() {
             </div>
           ) : (
             <>
-              {/* Cards View (Default & Premium) */}
               {viewMode === 'cards' ? (
                 <div className="p-6 grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {paginatedLeads.map((lead) => (
@@ -541,7 +567,6 @@ export default function AdminPanel() {
                   ))}
                 </div>
               ) : (
-                /* Table View */
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
@@ -598,7 +623,6 @@ export default function AdminPanel() {
                 </div>
               )}
 
-              {/* Pagination */}
               <Pagination
                 currentPage={currentPage}
                 totalItems={filteredLeads.length}

@@ -3,6 +3,7 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const { initDB } = require('./config/db');
 const leadRoutes = require('./routes/leadRoutes');
+const authRoutes = require('./routes/authRoutes');
 
 dotenv.config();
 
@@ -11,7 +12,7 @@ const PORT = process.env.PORT || 5001;
 
 // CORS configuration
 app.use(cors({
-  origin: '*', // Allow all origins for dev / flexibility; can be restricted in prod
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -35,7 +36,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Mount Lead Routes
+// Mount Routes
+app.use('/api/auth', authRoutes);
 app.use('/api/leads', leadRoutes);
 
 // 404 Not Found Handler
@@ -61,7 +63,8 @@ initDB().then(() => {
   app.listen(PORT, () => {
     console.log(`=======================================================`);
     console.log(`🚀 LeadDesk Mini Server is running on port ${PORT}`);
-    console.log(`🌐 API Endpoint: http://localhost:${PORT}/api/leads`);
+    console.log(`🌐 Auth Endpoint: http://localhost:${PORT}/api/auth/login`);
+    console.log(`🌐 Leads Endpoint: http://localhost:${PORT}/api/leads`);
     console.log(`=======================================================`);
   });
 });

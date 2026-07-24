@@ -1,5 +1,6 @@
 const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
+const bcrypt = require('bcryptjs');
 dotenv.config();
 
 // MySQL Configuration
@@ -17,8 +18,19 @@ const dbConfig = {
 let pool = null;
 let isUsingFallback = false;
 
+// Default Admin Credentials (Hashed via bcrypt)
+const DEFAULT_ADMIN = {
+  id: 1,
+  name: "LeadDesk Admin",
+  email: "admin@leaddesk.com",
+  // Hashed password for 'AdminPass123!'
+  passwordHash: "$2a$10$Q7yN.zF0BvW0Q2m7Z9J7yO/W/wKxJzY7P7Z8yW0Q2m7Z9J7yO/W/w",
+  created_at: new Date().toISOString()
+};
+
 // Memory fallback store for when MySQL server is offline/unconfigured locally
-const memoryStore = [
+const memoryAdmins = [];
+const memoryLeads = [
   {
     id: 1,
     name: "Aarav Sharma",
@@ -52,6 +64,34 @@ const memoryStore = [
 ];
 let memoryIdCounter = 4;
 
+async function seedDefaultAdmin(dbPool) {
+  const defaultPassword = 'AdminPass123!';
+  const hashedPassword = await bcrypt.hash(defaultPassword, 10);
+
+  if (dbPool) {
+    const [rows] = await dbPool.query(`SELECT * FROM admins WHERE email = ?`, ['admin@leaddesk.com']);
+    if (rows.length === 0) {
+      await dbPool.query(
+        `INSERT INTO admins (name, email, password) VALUES (?, ?, ?)`,
+        ['LeadDesk Admin', 'admin@leaddesk.com', hashedPassword]
+      );
+      console.log(`[Database] Seeded default admin: admin@leaddesk.com`);
+    }
+  } else {
+    // Memory fallback seed
+    if (memoryAdmins.length === 0) {
+      memoryAdmins.push({
+        id: 1,
+        name: "LeadDesk Admin",
+        email: "admin@leaddesk.com",
+        password: hashedPassword,
+        created_at: new Date().toISOString()
+      });
+      console.log(`[Database Fallback] Seeded default admin: admin@leaddesk.com`);
+    }
+  }
+}
+
 async function initDB() {
   try {
     const rootConnection = await mysql.createConnection({
@@ -66,7 +106,8 @@ async function initDB() {
 
     pool = mysql.createPool(dbConfig);
 
-    const createTableQuery = `
+    // Create leads table
+    const createLeadsTable = `
       CREATE TABLE IF NOT EXISTS leads (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
@@ -78,11 +119,27 @@ async function initDB() {
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `;
-    await pool.query(createTableQuery);
-    console.log(`[Database] MySQL connected successfully to database "${dbConfig.database}"!`);
+    await pool.query(createLeadsTable);
+
+    // Create admins table for Task B JWT authentication
+    const createAdminsTable = `
+      CREATE TABLE IF NOT EXISTS admins (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        email VARCHAR(255) NOT NULL UNIQUE,
+        password VARCHAR(255) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+    `;
+    await pool.query(createAdminsTable);
+
+    // Seed default admin
+    await seedDefaultAdmin(pool);
+    console.log(`[Database] MySQL initialized successfully for database "${dbConfig.database}"!`);
   } catch (err) {
-    console.warn(`[Database] MySQL connection notice (${err.message}). Using fallback data engine for local dev.`);
+    console.warn(`[Database Notice] MySQL connection offline (${err.message}). Using in-memory fallback engine.`);
     isUsingFallback = true;
+    await seedDefaultAdmin(null);
   }
 }
 
@@ -92,9 +149,32 @@ async function query(sql, params = []) {
     return rows;
   }
 
-  const lowerSql = sql.toLowerCase();
+  const lowerSql = sql.toLowerCase().trim();
 
-  // INSERT
+  // ADMIN QUERIES FOR MOCK FALLBACK
+  if (lowerSql.startsWith('select * from admins where email =')) {
+    const email = params[0];
+    return memoryAdmins.filter(a => a.email.toLowerCase() === email.toLowerCase());
+  }
+
+  if (lowerSql.startsWith('select * from admins where id =')) {
+    const id = parseInt(params[0], 10);
+    return memoryAdmins.filter(a => a.id === id);
+  }
+
+  if (lowerSql.startsWith('insert into admins')) {
+    const newAdmin = {
+      id: memoryAdmins.length + 1,
+      name: params[0],
+      email: params[1],
+      password: params[2],
+      created_at: new Date().toISOString()
+    };
+    memoryAdmins.push(newAdmin);
+    return { insertId: newAdmin.id };
+  }
+
+  // LEADS QUERIES FOR MOCK FALLBACK
   if (lowerSql.startsWith('insert into leads')) {
     const now = new Date().toISOString();
     const newLead = {
@@ -107,15 +187,14 @@ async function query(sql, params = []) {
       created_at: now,
       updated_at: now
     };
-    memoryStore.unshift(newLead);
+    memoryLeads.unshift(newLead);
     return { insertId: newLead.id };
   }
 
-  // UPDATE STATUS
   if (lowerSql.startsWith('update leads set status')) {
     const status = params[0];
     const id = parseInt(params[1], 10);
-    const lead = memoryStore.find(item => item.id === id);
+    const lead = memoryLeads.find(item => item.id === id);
     if (lead) {
       lead.status = status;
       lead.updated_at = new Date().toISOString();
@@ -124,30 +203,27 @@ async function query(sql, params = []) {
     return { affectedRows: 0 };
   }
 
-  // SEARCH / GET ALL
   if (lowerSql.includes('where name like') || lowerSql.includes('like')) {
     const q = params[0].replace(/%/g, '').toLowerCase();
-    return memoryStore.filter(item =>
+    return memoryLeads.filter(item =>
       item.name.toLowerCase().includes(q) ||
       item.email.toLowerCase().includes(q) ||
       item.message.toLowerCase().includes(q)
     );
   }
 
-  // SELECT STATS
   if (lowerSql.includes('count(')) {
     return [
       {
-        total: memoryStore.length,
-        new_count: memoryStore.filter(l => l.status === 'New').length,
-        contacted_count: memoryStore.filter(l => l.status === 'Contacted').length,
-        closed_count: memoryStore.filter(l => l.status === 'Closed').length,
+        total: memoryLeads.length,
+        new_count: memoryLeads.filter(l => l.status === 'New').length,
+        contacted_count: memoryLeads.filter(l => l.status === 'Contacted').length,
+        closed_count: memoryLeads.filter(l => l.status === 'Closed').length,
       }
     ];
   }
 
-  // DEFAULT SELECT ALL
-  return [...memoryStore].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  return [...memoryLeads].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 }
 
 module.exports = {

@@ -8,12 +8,15 @@ const {
   getStats
 } = require('../controllers/leadController');
 const validateLead = require('../middleware/validateLead');
+const authMiddleware = require('../middleware/authMiddleware');
 
-// API Route Mappings
+// Public lead submission endpoint
 router.post('/', validateLead, createLead);
-router.get('/', getAllLeads);
-router.get('/search', searchLeads);
-router.get('/stats', getStats);
-router.put('/:id', updateStatus);
+
+// Admin endpoints (Protected via JWT Auth Middleware)
+router.get('/', authMiddleware, getAllLeads);
+router.get('/stats', authMiddleware, getStats);
+router.get('/search', authMiddleware, searchLeads);
+router.put('/:id', authMiddleware, updateStatus);
 
 module.exports = router;
