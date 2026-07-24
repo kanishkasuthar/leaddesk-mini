@@ -21,6 +21,25 @@ class AdminModel {
     const result = await query(sql, [name, email, password]);
     return result.insertId;
   }
+
+  // Save password reset token and expiry timestamp
+  static async setResetToken(email, hashedToken, expiryTime) {
+    const sql = `UPDATE admins SET reset_token = ?, reset_token_expiry = ? WHERE email = ?`;
+    await query(sql, [hashedToken, expiryTime, email]);
+  }
+
+  // Find admin by reset token
+  static async findByResetToken(hashedToken) {
+    const sql = `SELECT * FROM admins WHERE reset_token = ?`;
+    const rows = await query(sql, [hashedToken]);
+    return rows[0] || null;
+  }
+
+  // Update password and clear reset token
+  static async updatePassword(id, hashedPassword) {
+    const sql = `UPDATE admins SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?`;
+    await query(sql, [hashedPassword, id]);
+  }
 }
 
 module.exports = AdminModel;

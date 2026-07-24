@@ -75,6 +75,8 @@ async function seedDefaultAdmin(dbPool) {
         name: "LeadDesk Admin",
         email: "admin@leaddesk.com",
         password: hashedPassword,
+        reset_token: null,
+        reset_token_expiry: null,
         created_at: now,
         updated_at: now
       });
@@ -112,13 +114,15 @@ async function initDB() {
     `;
     await pool.query(createLeadsTable);
 
-    // Create admins table with id, name, email, password, created_at, updated_at
+    // Create admins table
     const createAdminsTable = `
       CREATE TABLE IF NOT EXISTS admins (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
+        reset_token VARCHAR(255) DEFAULT NULL,
+        reset_token_expiry VARCHAR(255) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -148,9 +152,40 @@ async function query(sql, params = []) {
     return memoryAdmins.filter(a => a.email.toLowerCase() === email.toLowerCase());
   }
 
+  if (lowerSql.startsWith('select * from admins where reset_token =')) {
+    const token = params[0];
+    return memoryAdmins.filter(a => a.reset_token === token);
+  }
+
   if (lowerSql.startsWith('select * from admins where id =') || lowerSql.startsWith('select id, name, email, created_at from admins')) {
     const id = parseInt(params[0], 10);
     return memoryAdmins.filter(a => a.id === id);
+  }
+
+  if (lowerSql.startsWith('update admins set reset_token =')) {
+    const [hashedToken, expiryTime, email] = params;
+    const admin = memoryAdmins.find(a => a.email.toLowerCase() === email.toLowerCase());
+    if (admin) {
+      admin.reset_token = hashedToken;
+      admin.reset_token_expiry = expiryTime;
+      admin.updated_at = new Date().toISOString();
+      return { affectedRows: 1 };
+    }
+    return { affectedRows: 0 };
+  }
+
+  if (lowerSql.startsWith('update admins set password =')) {
+    const [hashedPassword, id] = params;
+    const adminId = parseInt(id, 10);
+    const admin = memoryAdmins.find(a => a.id === adminId);
+    if (admin) {
+      admin.password = hashedPassword;
+      admin.reset_token = null;
+      admin.reset_token_expiry = null;
+      admin.updated_at = new Date().toISOString();
+      return { affectedRows: 1 };
+    }
+    return { affectedRows: 0 };
   }
 
   if (lowerSql.startsWith('insert into admins')) {
@@ -160,6 +195,8 @@ async function query(sql, params = []) {
       name: params[0],
       email: params[1],
       password: params[2],
+      reset_token: null,
+      reset_token_expiry: null,
       created_at: now,
       updated_at: now
     };

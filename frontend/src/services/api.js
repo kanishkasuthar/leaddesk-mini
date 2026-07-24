@@ -28,13 +28,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Clear invalid authentication data from both storage mechanisms
       localStorage.removeItem('leaddesk_admin_token');
       localStorage.removeItem('leaddesk_admin_user');
       sessionStorage.removeItem('leaddesk_admin_token');
       sessionStorage.removeItem('leaddesk_admin_user');
 
-      // Dispatch session-expired event for global toast notification
       window.dispatchEvent(new CustomEvent('session-expired', {
         detail: { message: error.response?.data?.message || 'Authentication session expired. Please log in again.' }
       }));
@@ -49,7 +47,6 @@ export const authService = {
     const response = await api.post('/auth/login', credentials);
     if (response.data && response.data.token) {
       const storage = credentials.rememberMe ? localStorage : sessionStorage;
-      // Clear any opposite storage to prevent conflicts
       localStorage.removeItem('leaddesk_admin_token');
       localStorage.removeItem('leaddesk_admin_user');
       sessionStorage.removeItem('leaddesk_admin_token');
@@ -70,6 +67,12 @@ export const authService = {
   // POST /api/auth/forgot-password
   forgotPassword: async (email) => {
     const response = await api.post('/auth/forgot-password', { email });
+    return response.data;
+  },
+
+  // POST /api/auth/reset-password
+  resetPassword: async (data) => {
+    const response = await api.post('/auth/reset-password', data);
     return response.data;
   },
 

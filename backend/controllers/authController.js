@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const AdminModel = require('../models/adminModel');
@@ -9,6 +10,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'leaddesk_sandstone_espresso_jwt_se
 function sanitizeString(str) {
   if (typeof str !== 'string') return '';
   return str.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Helper to validate strong password
+function isStrongPassword(password) {
+  if (typeof password !== 'string') return false;
+  // Minimum 8 characters, at least one letter and one number
+  const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
+  return regex.test(password);
 }
 
 // @desc    Authenticate admin & get JWT token
@@ -72,7 +81,7 @@ const login = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Register a new admin (Protected / Internal API)
+// @desc    Register a new admin
 // @route   POST /api/auth/register
 // @access  Protected
 const registerAdmin = asyncHandler(async (req, res) => {
@@ -94,6 +103,13 @@ const registerAdmin = asyncHandler(async (req, res) => {
     return res.status(409).json({
       success: false,
       message: 'An admin account with this email address already exists.'
+    });
+  }
+
+  if (!isStrongPassword(password)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 8 characters long and contain at least one letter and one number.'
     });
   }
 
@@ -140,11 +156,12 @@ const getMe = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Password recovery request
+// @desc    Request password reset token
 // @route   POST /api/auth/forgot-password
 // @access  Public
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
+
   if (!email || typeof email !== 'string' || !email.trim()) {
     return res.status(400).json({
       success: false,
@@ -152,9 +169,101 @@ const forgotPassword = asyncHandler(async (req, res) => {
     });
   }
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email.trim())) {
+    return res.status(400).json({
+      success: false,
+      message: 'Please enter a valid email address.'
+    });
+  }
+
+  const sanitizedEmail = email.trim().toLowerCase();
+  const admin = await AdminModel.findByEmail(sanitizedEmail);
+
+  if (!admin) {
+    // Return generic success to prevent email enumeration attack
+    return res.status(200).json({
+      success: true,
+      message: 'If an admin account exists for this email address, password recovery instructions have been dispatched.'
+    });
+  }
+
+  // Generate secure random bytes token (64 hex characters)
+  const resetToken = crypto.randomBytes(32).toString('hex');
+
+  // Hash token for database storage (SHA-256)
+  const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+  // Token expires in 1 hour (3600000 ms)
+  const expiryTime = new Date(Date.now() + 3600000).toISOString();
+
+  await AdminModel.setResetToken(sanitizedEmail, hashedToken, expiryTime);
+
+  const resetUrl = `/reset-password/${resetToken}`;
+
   return res.status(200).json({
     success: true,
-    message: 'If an admin account exists for this email, password recovery instructions have been sent.'
+    message: 'Password reset instructions dispatched successfully.',
+    resetToken,
+    resetUrl
+  });
+});
+
+// @desc    Reset password using reset token
+// @route   POST /api/auth/reset-password
+// @access  Public
+const resetPassword = asyncHandler(async (req, res) => {
+  const { token, newPassword } = req.body;
+
+  if (!token || typeof token !== 'string') {
+    return res.status(400).json({
+      success: false,
+      message: 'Password reset token is required.'
+    });
+  }
+
+  if (!newPassword || typeof newPassword !== 'string') {
+    return res.status(400).json({
+      success: false,
+      message: 'New password is required.'
+    });
+  }
+
+  if (!isStrongPassword(newPassword)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password must be at least 8 characters long and contain at least one letter and one number.'
+    });
+  }
+
+  // Hash token to compare with database
+  const hashedToken = crypto.createHash('sha256').update(token.trim()).digest('hex');
+
+  const admin = await AdminModel.findByResetToken(hashedToken);
+
+  if (!admin) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid or expired password reset token.'
+    });
+  }
+
+  // Check if token has expired
+  if (admin.reset_token_expiry && new Date() > new Date(admin.reset_token_expiry)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Password reset token has expired. Please request a new link.'
+    });
+  }
+
+  // Hash new password with bcrypt (10 rounds)
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+  await AdminModel.updatePassword(admin.id, hashedPassword);
+
+  return res.status(200).json({
+    success: true,
+    message: 'Your password has been successfully reset. You may now log in.'
   });
 });
 
@@ -162,5 +271,6 @@ module.exports = {
   login,
   registerAdmin,
   getMe,
-  forgotPassword
+  forgotPassword,
+  resetPassword
 };
