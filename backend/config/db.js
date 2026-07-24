@@ -18,17 +18,7 @@ const dbConfig = {
 let pool = null;
 let isUsingFallback = false;
 
-// Default Admin Credentials (Hashed via bcrypt)
-const DEFAULT_ADMIN = {
-  id: 1,
-  name: "LeadDesk Admin",
-  email: "admin@leaddesk.com",
-  // Hashed password for 'AdminPass123!'
-  passwordHash: "$2a$10$Q7yN.zF0BvW0Q2m7Z9J7yO/W/wKxJzY7P7Z8yW0Q2m7Z9J7yO/W/w",
-  created_at: new Date().toISOString()
-};
-
-// Memory fallback store for when MySQL server is offline/unconfigured locally
+// Memory fallback store for local dev without MySQL
 const memoryAdmins = [];
 const memoryLeads = [
   {
@@ -78,14 +68,15 @@ async function seedDefaultAdmin(dbPool) {
       console.log(`[Database] Seeded default admin: admin@leaddesk.com`);
     }
   } else {
-    // Memory fallback seed
     if (memoryAdmins.length === 0) {
+      const now = new Date().toISOString();
       memoryAdmins.push({
         id: 1,
         name: "LeadDesk Admin",
         email: "admin@leaddesk.com",
         password: hashedPassword,
-        created_at: new Date().toISOString()
+        created_at: now,
+        updated_at: now
       });
       console.log(`[Database Fallback] Seeded default admin: admin@leaddesk.com`);
     }
@@ -121,19 +112,19 @@ async function initDB() {
     `;
     await pool.query(createLeadsTable);
 
-    // Create admins table for Task B JWT authentication
+    // Create admins table with id, name, email, password, created_at, updated_at
     const createAdminsTable = `
       CREATE TABLE IF NOT EXISTS admins (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL UNIQUE,
         password VARCHAR(255) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `;
     await pool.query(createAdminsTable);
 
-    // Seed default admin
     await seedDefaultAdmin(pool);
     console.log(`[Database] MySQL initialized successfully for database "${dbConfig.database}"!`);
   } catch (err) {
@@ -151,30 +142,32 @@ async function query(sql, params = []) {
 
   const lowerSql = sql.toLowerCase().trim();
 
-  // ADMIN QUERIES FOR MOCK FALLBACK
+  // ADMIN QUERIES
   if (lowerSql.startsWith('select * from admins where email =')) {
     const email = params[0];
     return memoryAdmins.filter(a => a.email.toLowerCase() === email.toLowerCase());
   }
 
-  if (lowerSql.startsWith('select * from admins where id =')) {
+  if (lowerSql.startsWith('select * from admins where id =') || lowerSql.startsWith('select id, name, email, created_at from admins')) {
     const id = parseInt(params[0], 10);
     return memoryAdmins.filter(a => a.id === id);
   }
 
   if (lowerSql.startsWith('insert into admins')) {
+    const now = new Date().toISOString();
     const newAdmin = {
       id: memoryAdmins.length + 1,
       name: params[0],
       email: params[1],
       password: params[2],
-      created_at: new Date().toISOString()
+      created_at: now,
+      updated_at: now
     };
     memoryAdmins.push(newAdmin);
     return { insertId: newAdmin.id };
   }
 
-  // LEADS QUERIES FOR MOCK FALLBACK
+  // LEADS QUERIES
   if (lowerSql.startsWith('insert into leads')) {
     const now = new Date().toISOString();
     const newLead = {
