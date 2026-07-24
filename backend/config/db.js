@@ -38,8 +38,8 @@ const memoryLeads = [
     budget: "₹25,000 - ₹50,000",
     message: "Looking for full-stack web development services for our upcoming e-commerce portal.",
     status: "New",
-    created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    updated_at: new Date(Date.now() - 3600000 * 2).toISOString()
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
   },
   {
     id: 2,
@@ -273,12 +273,13 @@ async function query(sql, params = []) {
   }
 
   if (lowerSql.includes('count(')) {
+    const todayStr = new Date().toISOString().split('T')[0];
     return [
       {
         total: memoryLeads.length,
-        new_count: memoryLeads.filter(l => l.status === 'New').length,
-        contacted_count: memoryLeads.filter(l => l.status === 'Contacted').length,
-        closed_count: memoryLeads.filter(l => l.status === 'Closed').length,
+        active_count: memoryLeads.filter(l => l.status === 'New' || l.status === 'Contacted').length,
+        inactive_count: memoryLeads.filter(l => l.status === 'Closed').length,
+        today_count: memoryLeads.filter(l => (l.created_at || '').startsWith(todayStr)).length,
       }
     ];
   }

@@ -42,23 +42,23 @@ class LeadModel {
     return await query(sql, [pattern, pattern, pattern]);
   }
 
-  // Get aggregated stats for top dashboard cards
+  // Get aggregated dashboard statistics: Total, Active, Inactive, Added Today
   static async getStats() {
     const sql = `
       SELECT 
         COUNT(*) AS total,
-        SUM(CASE WHEN status = 'New' THEN 1 ELSE 0 END) AS new_count,
-        SUM(CASE WHEN status = 'Contacted' THEN 1 ELSE 0 END) AS contacted_count,
-        SUM(CASE WHEN status = 'Closed' THEN 1 ELSE 0 END) AS closed_count
+        SUM(CASE WHEN status IN ('New', 'Contacted') THEN 1 ELSE 0 END) AS active_count,
+        SUM(CASE WHEN status = 'Closed' THEN 1 ELSE 0 END) AS inactive_count,
+        SUM(CASE WHEN DATE(created_at) = CURRENT_DATE THEN 1 ELSE 0 END) AS today_count
       FROM leads
     `;
     const rows = await query(sql);
     const stat = rows[0] || {};
     return {
       total: parseInt(stat.total || 0, 10),
-      newCount: parseInt(stat.new_count || 0, 10),
-      contactedCount: parseInt(stat.contacted_count || 0, 10),
-      closedCount: parseInt(stat.closed_count || 0, 10)
+      activeCount: parseInt(stat.active_count || 0, 10),
+      inactiveCount: parseInt(stat.inactive_count || 0, 10),
+      todayCount: parseInt(stat.today_count || 0, 10)
     };
   }
 }

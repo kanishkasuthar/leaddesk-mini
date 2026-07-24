@@ -8,19 +8,16 @@ import LeadDrawer from '../components/LeadDrawer';
 import CommandPalette from '../components/CommandPalette';
 import QuoteBanner from '../components/QuoteBanner';
 import QuickActions from '../components/QuickActions';
-import { TableRowSkeleton, CardSkeleton } from '../components/SkeletonLoader';
+import { CardSkeleton } from '../components/SkeletonLoader';
 import { leadService, authService } from '../services/api';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
-  Inbox, 
-  PhoneCall, 
-  CheckCircle, 
+  Activity, 
+  Archive, 
+  Calendar, 
   Search, 
-  RefreshCw, 
-  Mail, 
-  DollarSign, 
   Loader2,
   X,
   LayoutGrid,
@@ -39,7 +36,7 @@ export default function AdminPanel() {
   const searchInputRef = useRef(null);
 
   const [leads, setLeads] = useState([]);
-  const [stats, setStats] = useState({ total: 0, newCount: 0, contactedCount: 0, closedCount: 0 });
+  const [stats, setStats] = useState({ total: 0, activeCount: 0, inactiveCount: 0, todayCount: 0 });
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
   const [viewMode, setViewMode] = useState('cards');
@@ -105,7 +102,7 @@ export default function AdminPanel() {
         setLeads(leadsRes.data || []);
       }
       if (statsRes.success) {
-        setStats(statsRes.data || { total: 0, newCount: 0, contactedCount: 0, closedCount: 0 });
+        setStats(statsRes.data || { total: 0, activeCount: 0, inactiveCount: 0, todayCount: 0 });
       }
     } catch (error) {
       console.error('Error fetching admin data:', error);
@@ -359,70 +356,74 @@ export default function AdminPanel() {
           </div>
         </div>
 
-        {/* 4 KPI Metric Cards */}
+        {/* 4 Statistics KPI Cards with Subtle Hover Animations */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           
-          {/* Total Opportunities */}
+          {/* Total Leads Card */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
             transition={{ duration: 0.3 }}
-            className="sandstone-card p-5 sm:p-6 border border-[#E5DDD3] shadow-sandstone flex items-center justify-between"
+            className="sandstone-card p-5 sm:p-6 border border-[#E5DDD3] shadow-sandstone flex items-center justify-between transition-shadow hover:shadow-lg cursor-default"
           >
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6F6A63]">Total Opportunities</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#6F6A63]">Total Leads</p>
               <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#343434] mt-1">{stats.total}</h2>
             </div>
-            <div className="w-10 h-10 rounded-[14px] bg-[#4A3728] text-[#CDAA7D] flex items-center justify-center">
+            <div className="w-11 h-11 rounded-[14px] bg-[#4A3728] text-[#CDAA7D] flex items-center justify-center shadow-sm">
               <Users className="w-5 h-5" />
             </div>
           </motion.div>
 
-          {/* New */}
+          {/* Active Leads Card */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
             transition={{ duration: 0.3, delay: 0.05 }}
-            className="sandstone-card p-5 sm:p-6 border border-[#E5DDD3] shadow-sandstone flex items-center justify-between"
+            className="sandstone-card p-5 sm:p-6 border border-[#E5DDD3] shadow-sandstone flex items-center justify-between transition-shadow hover:shadow-lg cursor-default"
           >
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#4A3728]">New</p>
-              <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#4A3728] mt-1">{stats.newCount}</h2>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#5E7A5D]">Active Leads</p>
+              <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#5E7A5D] mt-1">{stats.activeCount}</h2>
             </div>
-            <div className="w-10 h-10 rounded-[14px] bg-[#CDAA7D]/20 text-[#4A3728] flex items-center justify-center">
-              <Inbox className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-[14px] bg-[#5E7A5D]/20 text-[#5E7A5D] flex items-center justify-center shadow-sm">
+              <Activity className="w-5 h-5" />
             </div>
           </motion.div>
 
-          {/* Contacted */}
+          {/* Inactive Leads Card */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
             transition={{ duration: 0.3, delay: 0.1 }}
-            className="sandstone-card p-5 sm:p-6 border border-[#E5DDD3] shadow-sandstone flex items-center justify-between"
+            className="sandstone-card p-5 sm:p-6 border border-[#E5DDD3] shadow-sandstone flex items-center justify-between transition-shadow hover:shadow-lg cursor-default"
           >
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#5E7A5D]">Contacted</p>
-              <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#5E7A5D] mt-1">{stats.contactedCount}</h2>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#4A3728]">Inactive Leads</p>
+              <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#4A3728] mt-1">{stats.inactiveCount}</h2>
             </div>
-            <div className="w-10 h-10 rounded-[14px] bg-[#5E7A5D]/20 text-[#5E7A5D] flex items-center justify-center">
-              <PhoneCall className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-[14px] bg-[#4A3728] text-white flex items-center justify-center shadow-sm">
+              <Archive className="w-5 h-5" />
             </div>
           </motion.div>
 
-          {/* Closed */}
+          {/* Leads Added Today Card */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -4, transition: { duration: 0.2 } }}
             transition={{ duration: 0.3, delay: 0.15 }}
-            className="sandstone-card p-5 sm:p-6 border border-[#E5DDD3] shadow-sandstone flex items-center justify-between"
+            className="sandstone-card p-5 sm:p-6 border border-[#E5DDD3] shadow-sandstone flex items-center justify-between transition-shadow hover:shadow-lg cursor-default"
           >
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[#4A3728]">Closed</p>
-              <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#4A3728] mt-1">{stats.closedCount}</h2>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#CDAA7D]">Leads Added Today</p>
+              <h2 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#4A3728] mt-1">{stats.todayCount}</h2>
             </div>
-            <div className="w-10 h-10 rounded-[14px] bg-[#4A3728] text-white flex items-center justify-center">
-              <CheckCircle className="w-5 h-5" />
+            <div className="w-11 h-11 rounded-[14px] bg-[#CDAA7D]/20 text-[#4A3728] flex items-center justify-center shadow-sm">
+              <Calendar className="w-5 h-5" />
             </div>
           </motion.div>
 
