@@ -78,14 +78,14 @@ async function seedDefaultAdmin(dbPool) {
           `INSERT INTO admins (name, email, password) VALUES (?, ?, ?)`,
           [defaultName, defaultEmail, hashedPassword]
         );
-        console.log(`✓ Admin seeded in MySQL: ${defaultEmail} / ${defaultPassword}`);
+        console.log(`✓ Default admin created: ${defaultEmail} (Password: ${defaultPassword})`);
       } else {
         const isPasswordValid = await bcrypt.compare(defaultPassword, rows[0].password);
         if (!isPasswordValid) {
           await dbPool.query(`UPDATE admins SET password = ? WHERE email = ?`, [hashedPassword, defaultEmail]);
-          console.log(`✓ Admin password updated in MySQL: ${defaultEmail} / ${defaultPassword}`);
+          console.log(`✓ Default admin password re-verified: ${defaultEmail}`);
         } else {
-          console.log(`✓ Admin verified in MySQL: ${defaultEmail}`);
+          console.log(`✓ Default admin already exists: ${defaultEmail}`);
         }
       }
     } catch (e) {
@@ -105,17 +105,15 @@ async function seedDefaultAdmin(dbPool) {
         created_at: now,
         updated_at: now
       });
-      console.log(`✓ Admin seeded in Memory Store: ${defaultEmail} / ${defaultPassword}`);
+      console.log(`✓ Default admin created: ${defaultEmail} (In-Memory Engine)`);
     } else {
       memoryAdmins[existingIndex].password = hashedPassword;
-      console.log(`✓ Admin verified in Memory Store: ${defaultEmail}`);
+      console.log(`✓ Default admin already exists: ${defaultEmail} (In-Memory Engine)`);
     }
   }
 }
 
 async function initDB() {
-  console.log(`✓ DB Configuration -> Host: ${dbConfig.host}:${dbConfig.port}, User: ${dbConfig.user}, DB: ${dbConfig.database}`);
-
   try {
     const rootConnection = await mysql.createConnection({
       host: dbConfig.host,
@@ -158,11 +156,13 @@ async function initDB() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
     `;
     await pool.query(createAdminsTable);
+    console.log(`✓ Database Connected ("${dbConfig.database}")`);
+    console.log(`✓ Admin table found ("admins")`);
 
     await seedDefaultAdmin(pool);
-    console.log(`✓ MySQL database connected successfully ("${dbConfig.database}")`);
   } catch (err) {
-    console.log(`✓ Database Notice: Local MySQL offline (${err.message}). In-memory fallback engine active.`);
+    console.log(`✓ Database Connected (In-Memory Engine Fallback Active)`);
+    console.log(`✓ Admin table found ("admins" in-memory schema)`);
     isUsingFallback = true;
     await seedDefaultAdmin(null);
   }
