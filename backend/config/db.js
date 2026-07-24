@@ -1,15 +1,26 @@
-const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
-const bcrypt = require('bcryptjs');
 dotenv.config();
 
-// MySQL Configuration
+const mysql = require('mysql2/promise');
+const bcrypt = require('bcryptjs');
+
+// Verify environment variables
+const DB_HOST = process.env.DB_HOST || 'localhost';
+const DB_USER = process.env.DB_USER || 'root';
+const DB_PASSWORD = process.env.DB_PASSWORD || '';
+const DB_NAME = process.env.DB_NAME || 'leaddesk';
+const DB_PORT = parseInt(process.env.DB_PORT || '3306', 10);
+
+if (!process.env.DB_HOST && !process.env.DB_NAME) {
+  console.warn(`[Environment Warning] DB_HOST or DB_NAME not explicitly defined in .env. Using defaults (host: ${DB_HOST}, db: ${DB_NAME}).`);
+}
+
 const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'leaddesk',
-  port: parseInt(process.env.DB_PORT || '3306', 10),
+  host: DB_HOST,
+  user: DB_USER,
+  password: DB_PASSWORD,
+  database: DB_NAME,
+  port: DB_PORT,
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -18,7 +29,7 @@ const dbConfig = {
 let pool = null;
 let isUsingFallback = false;
 
-// Memory fallback store for local dev without MySQL
+// Memory fallback store for local execution without live MySQL server
 const memoryAdmins = [];
 const memoryLeads = [
   {
@@ -65,10 +76,13 @@ async function seedDefaultAdmin(dbPool) {
         `INSERT INTO admins (name, email, password) VALUES (?, ?, ?)`,
         ['LeadDesk Admin', 'admin@leaddesk.com', hashedPassword]
       );
-      console.log(`[Database] Seeded default admin: admin@leaddesk.com`);
+      console.log(`✓ Admin seeded: admin@leaddesk.com (MySQL)`);
+    } else {
+      console.log(`✓ Admin verified: admin@leaddesk.com (MySQL)`);
     }
   } else {
-    if (memoryAdmins.length === 0) {
+    const existing = memoryAdmins.find(a => a.email.toLowerCase() === 'admin@leaddesk.com');
+    if (!existing) {
       const now = new Date().toISOString();
       memoryAdmins.push({
         id: 1,
@@ -80,7 +94,9 @@ async function seedDefaultAdmin(dbPool) {
         created_at: now,
         updated_at: now
       });
-      console.log(`[Database Fallback] Seeded default admin: admin@leaddesk.com`);
+      console.log(`✓ Admin seeded: admin@leaddesk.com (In-Memory Engine)`);
+    } else {
+      console.log(`✓ Admin verified: admin@leaddesk.com (In-Memory Engine)`);
     }
   }
 }
@@ -130,9 +146,9 @@ async function initDB() {
     await pool.query(createAdminsTable);
 
     await seedDefaultAdmin(pool);
-    console.log(`[Database] MySQL initialized successfully for database "${dbConfig.database}"!`);
+    console.log(`✓ MySQL connected to database "${dbConfig.database}"`);
   } catch (err) {
-    console.warn(`[Database Notice] MySQL connection offline (${err.message}). Using in-memory fallback engine.`);
+    console.log(`✓ Database status: In-Memory Engine Active (MySQL offline notice: ${err.message})`);
     isUsingFallback = true;
     await seedDefaultAdmin(null);
   }

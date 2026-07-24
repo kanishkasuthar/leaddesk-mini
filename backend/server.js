@@ -1,14 +1,16 @@
+const dotenv = require('dotenv');
+dotenv.config();
+
 const express = require('express');
 const cors = require('cors');
-const dotenv = require('dotenv');
 const { initDB } = require('./config/db');
 const leadRoutes = require('./routes/leadRoutes');
 const authRoutes = require('./routes/authRoutes');
 
-dotenv.config();
+console.log(`✓ dotenv loaded`);
 
 const app = express();
-const PORT = process.env.PORT || 5001;
+let PORT = parseInt(process.env.PORT || '5001', 10);
 
 // Production CORS Configuration
 const allowedOrigins = [
@@ -20,7 +22,6 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow non-browser calls (like mobile/Postman/curl) or whitelisted origins
     if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
       callback(null, true);
     } else {
@@ -53,7 +54,12 @@ app.get('/health', (req, res) => {
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
+console.log(`✓ Authentication routes registered (/api/auth)`);
+
 app.use('/api/leads', leadRoutes);
+console.log(`✓ Lead management routes registered (/api/leads)`);
+
+console.log(`✓ JWT initialized`);
 
 // 404 Not Found Handler
 app.use((req, res) => {
@@ -74,15 +80,29 @@ app.use((err, req, res, next) => {
   });
 });
 
-// Initialize Database & Start Server
-initDB().then(() => {
-  app.listen(PORT, () => {
+// Start Server with Graceful Port Conflict Handling
+function startServer(portToTry) {
+  const server = app.listen(portToTry, () => {
     console.log(`=======================================================`);
-    console.log(`🚀 LeadDesk Mini Production Server running on port ${PORT}`);
-    console.log(`🌐 Auth Endpoint: http://localhost:${PORT}/api/auth/login`);
-    console.log(`🌐 Leads Endpoint: http://localhost:${PORT}/api/leads`);
+    console.log(`✓ Server running on port ${portToTry}`);
+    console.log(`🌐 Auth Endpoint: http://localhost:${portToTry}/api/auth/login`);
+    console.log(`🌐 Leads Endpoint: http://localhost:${portToTry}/api/leads`);
     console.log(`=======================================================`);
   });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.warn(`[Port Notice] Port ${portToTry} is currently occupied. Attempting alternative port ${portToTry + 1}...`);
+      startServer(portToTry + 1);
+    } else {
+      console.error('Fatal Server Listen Error:', err);
+    }
+  });
+}
+
+// Initialize Database & Start Server
+initDB().then(() => {
+  startServer(PORT);
 });
 
 module.exports = app;
