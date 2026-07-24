@@ -14,10 +14,6 @@ const DB_PASSWORD = process.env.DB_PASSWORD || '';
 const DB_NAME = process.env.DB_NAME || 'leaddesk';
 const DB_PORT = parseInt(process.env.DB_PORT || '3306', 10);
 
-if (!process.env.DB_HOST) {
-  console.warn(`[Environment Warning] DB_HOST not specified in .env. Defaulting to "${DB_HOST}".`);
-}
-
 const dbConfig = {
   host: DB_HOST,
   user: DB_USER,
@@ -69,6 +65,7 @@ const memoryLeads = [
 let memoryIdCounter = 4;
 
 async function seedDefaultAdmin(dbPool) {
+  const defaultName = 'Administrator';
   const defaultEmail = 'admin@leaddesk.com';
   const defaultPassword = 'AdminPass123!';
   const hashedPassword = await bcrypt.hash(defaultPassword, 10);
@@ -79,11 +76,10 @@ async function seedDefaultAdmin(dbPool) {
       if (rows.length === 0) {
         await dbPool.query(
           `INSERT INTO admins (name, email, password) VALUES (?, ?, ?)`,
-          ['LeadDesk Admin', defaultEmail, hashedPassword]
+          [defaultName, defaultEmail, hashedPassword]
         );
         console.log(`✓ Admin seeded in MySQL: ${defaultEmail} / ${defaultPassword}`);
       } else {
-        // Ensure default password hash is valid
         const isPasswordValid = await bcrypt.compare(defaultPassword, rows[0].password);
         if (!isPasswordValid) {
           await dbPool.query(`UPDATE admins SET password = ? WHERE email = ?`, [hashedPassword, defaultEmail]);
@@ -101,7 +97,7 @@ async function seedDefaultAdmin(dbPool) {
     if (existingIndex === -1) {
       memoryAdmins.push({
         id: 1,
-        name: "LeadDesk Admin",
+        name: defaultName,
         email: defaultEmail,
         password: hashedPassword,
         reset_token: null,
@@ -111,7 +107,6 @@ async function seedDefaultAdmin(dbPool) {
       });
       console.log(`✓ Admin seeded in Memory Store: ${defaultEmail} / ${defaultPassword}`);
     } else {
-      // Re-hash default admin password in memory if reset previously to ensure demo login always works
       memoryAdmins[existingIndex].password = hashedPassword;
       console.log(`✓ Admin verified in Memory Store: ${defaultEmail}`);
     }
@@ -119,7 +114,7 @@ async function seedDefaultAdmin(dbPool) {
 }
 
 async function initDB() {
-  console.log(`✓ DB Config Host: ${dbConfig.host}:${dbConfig.port}, User: ${dbConfig.user}, DB: ${dbConfig.database}`);
+  console.log(`✓ DB Configuration -> Host: ${dbConfig.host}:${dbConfig.port}, User: ${dbConfig.user}, DB: ${dbConfig.database}`);
 
   try {
     const rootConnection = await mysql.createConnection({
