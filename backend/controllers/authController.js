@@ -15,7 +15,6 @@ function sanitizeString(str) {
 // Helper to validate strong password
 function isStrongPassword(password) {
   if (typeof password !== 'string') return false;
-  // Minimum 8 characters, at least one letter and one number
   const regex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
   return regex.test(password);
 }
@@ -181,7 +180,6 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const admin = await AdminModel.findByEmail(sanitizedEmail);
 
   if (!admin) {
-    // Return generic success to prevent email enumeration attack
     return res.status(200).json({
       success: true,
       message: 'If an admin account exists for this email address, password recovery instructions have been dispatched.'
