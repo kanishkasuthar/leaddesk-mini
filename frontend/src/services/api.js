@@ -12,7 +12,7 @@ const api = axios.create({
   timeout: 10000,
 });
 
-// Axios Request Interceptor: Attach JWT Token
+// Axios Request Interceptor: Attach JWT Token Automatically
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('leaddesk_admin_token') || sessionStorage.getItem('leaddesk_admin_token');
   if (token) {
@@ -23,16 +23,21 @@ api.interceptors.request.use((config) => {
   return Promise.reject(error);
 });
 
-// Axios Response Interceptor: Handle Token Expiry (401)
+// Axios Response Interceptor: Handle Expired / Invalid Tokens (401) Gracefully
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Clear token if unauthorized / expired
+      // Clear invalid authentication data from both storage mechanisms
       localStorage.removeItem('leaddesk_admin_token');
       localStorage.removeItem('leaddesk_admin_user');
       sessionStorage.removeItem('leaddesk_admin_token');
       sessionStorage.removeItem('leaddesk_admin_user');
+
+      // Dispatch session-expired event for global toast notification
+      window.dispatchEvent(new CustomEvent('session-expired', {
+        detail: { message: error.response?.data?.message || 'Authentication session expired. Please log in again.' }
+      }));
     }
     return Promise.reject(error);
   }
@@ -44,6 +49,12 @@ export const authService = {
     const response = await api.post('/auth/login', credentials);
     if (response.data && response.data.token) {
       const storage = credentials.rememberMe ? localStorage : sessionStorage;
+      // Clear any opposite storage to prevent conflicts
+      localStorage.removeItem('leaddesk_admin_token');
+      localStorage.removeItem('leaddesk_admin_user');
+      sessionStorage.removeItem('leaddesk_admin_token');
+      sessionStorage.removeItem('leaddesk_admin_user');
+
       storage.setItem('leaddesk_admin_token', response.data.token);
       storage.setItem('leaddesk_admin_user', JSON.stringify(response.data.admin));
     }
@@ -62,7 +73,7 @@ export const authService = {
     return response.data;
   },
 
-  // Logout admin
+  // Clear session & tokens
   logout: () => {
     localStorage.removeItem('leaddesk_admin_token');
     localStorage.removeItem('leaddesk_admin_user');
@@ -70,12 +81,12 @@ export const authService = {
     sessionStorage.removeItem('leaddesk_admin_user');
   },
 
-  // Get stored token
+  // Retrieve active token
   getToken: () => {
     return localStorage.getItem('leaddesk_admin_token') || sessionStorage.getItem('leaddesk_admin_token');
   },
 
-  // Get stored admin info
+  // Retrieve active admin user info
   getAdmin: () => {
     const userStr = localStorage.getItem('leaddesk_admin_user') || sessionStorage.getItem('leaddesk_admin_user');
     if (!userStr) return null;

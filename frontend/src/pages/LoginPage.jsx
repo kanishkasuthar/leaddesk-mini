@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Mail, Lock, Eye, EyeOff, Loader2, AlertCircle, CheckCircle2, Key, X, ArrowLeft } from 'lucide-react';
@@ -24,6 +24,14 @@ export default function LoginPage() {
   const [forgotSubmitted, setForgotSubmitted] = useState(false);
 
   const from = location.state?.from?.pathname || '/admin';
+
+  // Persistent Session Check: Redirect logged-in admins straight to dashboard
+  useEffect(() => {
+    const existingToken = authService.getToken();
+    if (existingToken) {
+      navigate('/admin', { replace: true });
+    }
+  }, [navigate]);
 
   const handleQuickFill = () => {
     setEmail('admin@leaddesk.com');
@@ -241,7 +249,7 @@ export default function LoginPage() {
                 </label>
               </div>
 
-              {/* Login Button with Loading Spinner */}
+              {/* Submit Button */}
               <button
                 type="submit"
                 disabled={isLoading}

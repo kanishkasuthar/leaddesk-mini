@@ -79,6 +79,20 @@ export default function AdminPanel() {
     navigate('/login');
   };
 
+  // Listen for session expiry event from Axios interceptor
+  useEffect(() => {
+    const handleSessionExpired = (e) => {
+      const msg = e.detail?.message || 'Authentication session expired. Please log in again.';
+      setToast({ message: msg, type: 'error' });
+      setTimeout(() => {
+        navigate('/login', { replace: true });
+      }, 1200);
+    };
+
+    window.addEventListener('session-expired', handleSessionExpired);
+    return () => window.removeEventListener('session-expired', handleSessionExpired);
+  }, [navigate]);
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -96,8 +110,9 @@ export default function AdminPanel() {
     } catch (error) {
       console.error('Error fetching admin data:', error);
       if (error.response?.status === 401) {
-        setToast({ message: 'Session expired. Please log in again.', type: 'error' });
-        navigate('/login');
+        setToast({ message: 'Session expired. Redirecting to login...', type: 'error' });
+        authService.logout();
+        setTimeout(() => navigate('/login'), 1000);
       } else {
         setToast({ message: 'Failed to connect to lead database backend API.', type: 'error' });
       }
