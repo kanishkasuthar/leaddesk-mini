@@ -16,6 +16,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // Forgot password modal state
   const [forgotModalOpen, setForgotModalOpen] = useState(false);
@@ -28,14 +29,33 @@ export default function LoginPage() {
     setEmail('admin@leaddesk.com');
     setPassword('AdminPass123!');
     setErrorMsg('');
+    setFieldErrors({});
+  };
+
+  const validateForm = () => {
+    const errs = {};
+    if (!email.trim()) {
+      errs.email = 'Email address is required';
+    } else {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        errs.email = 'Please enter a valid email address';
+      }
+    }
+
+    if (!password) {
+      errs.password = 'Password is required';
+    }
+
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setErrorMsg('');
 
-    if (!email.trim() || !password) {
-      setErrorMsg('Please enter both email address and password.');
+    if (!validateForm()) {
       return;
     }
 
@@ -84,18 +104,18 @@ export default function LoginPage() {
             <div className="w-12 h-12 rounded-[16px] bg-[#4A3728] text-[#CDAA7D] flex items-center justify-center mx-auto shadow-espresso">
               <Shield className="w-6 h-6" />
             </div>
-            <h1 className="font-heading text-3xl font-extrabold text-[#343434]">
-              Executive Login
+            <h1 className="font-heading text-3xl sm:text-4xl font-extrabold text-[#343434]">
+              Welcome Back
             </h1>
-            <p className="text-xs text-[#6F6A63]">
-              Enter credentials to access the LeadDesk Mini workspace.
+            <p className="text-xs sm:text-sm text-[#6F6A63]">
+              Sign in to access your LeadDesk Mini executive workspace.
             </p>
           </div>
 
           {/* Quick Demo Credentials Hint Card */}
           <div className="p-3.5 rounded-[16px] bg-[#CDAA7D]/15 border border-[#CDAA7D]/40 flex items-center justify-between gap-3 text-xs">
             <div className="space-y-0.5 text-left">
-              <span className="font-bold text-[#4A3728]">Test Credentials:</span>
+              <span className="font-bold text-[#4A3728]">Evaluator Demo Credentials:</span>
               <p className="text-[#6F6A63] text-[11px]">admin@leaddesk.com • AdminPass123!</p>
             </div>
             <button
@@ -107,7 +127,7 @@ export default function LoginPage() {
             </button>
           </div>
 
-          {/* Login Card */}
+          {/* Editorial Login Card */}
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
@@ -124,26 +144,40 @@ export default function LoginPage() {
 
             <form onSubmit={handleLogin} noValidate className="space-y-5">
               
-              {/* Email */}
+              {/* Email Field */}
               <div className="space-y-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-[#6F6A63] flex items-center gap-1.5">
+                <label htmlFor="login-email" className="text-xs font-bold uppercase tracking-wider text-[#6F6A63] flex items-center gap-1.5">
                   <Mail className="w-3.5 h-3.5 text-[#4A3728]" />
                   <span>Email Address</span>
                 </label>
                 <input
+                  id="login-email"
                   type="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (fieldErrors.email) setFieldErrors(prev => ({ ...prev, email: '' }));
+                  }}
                   placeholder="admin@leaddesk.com"
                   required
-                  className="w-full px-4 py-3 rounded-[14px] bg-[#FFFFFF] border border-[#E5DDD3] text-xs text-[#343434] placeholder-[#9CA3AF] focus:outline-none focus:border-[#4A3728] focus:ring-2 focus:ring-[#4A3728]/10 transition-all"
+                  className={`w-full px-4 py-3 rounded-[14px] bg-[#FFFFFF] border text-xs text-[#343434] placeholder-[#9CA3AF] focus:outline-none transition-all ${
+                    fieldErrors.email
+                      ? 'border-[#A04E45] ring-2 ring-[#A04E45]/10'
+                      : 'border-[#E5DDD3] focus:border-[#4A3728] focus:ring-2 focus:ring-[#4A3728]/10'
+                  }`}
                 />
+                {fieldErrors.email && (
+                  <p className="text-[11px] text-[#A04E45] font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>{fieldErrors.email}</span>
+                  </p>
+                )}
               </div>
 
-              {/* Password */}
+              {/* Password Field */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold uppercase tracking-wider text-[#6F6A63] flex items-center gap-1.5">
+                  <label htmlFor="login-password" className="text-xs font-bold uppercase tracking-wider text-[#6F6A63] flex items-center gap-1.5">
                     <Lock className="w-3.5 h-3.5 text-[#4A3728]" />
                     <span>Password</span>
                   </label>
@@ -154,7 +188,7 @@ export default function LoginPage() {
                       setForgotSubmitted(false);
                       setForgotEmail(email);
                     }}
-                    className="text-[11px] font-bold text-[#4A3728] hover:underline"
+                    className="text-[11px] font-bold text-[#4A3728] hover:underline focus:outline-none"
                   >
                     Forgot Password?
                   </button>
@@ -162,21 +196,36 @@ export default function LoginPage() {
 
                 <div className="relative">
                   <input
+                    id="login-password"
                     type={showPassword ? 'text' : 'password'}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(e) => {
+                      setPassword(e.target.value);
+                      if (fieldErrors.password) setFieldErrors(prev => ({ ...prev, password: '' }));
+                    }}
                     placeholder="••••••••••••"
                     required
-                    className="w-full pl-4 pr-10 py-3 rounded-[14px] bg-[#FFFFFF] border border-[#E5DDD3] text-xs text-[#343434] placeholder-[#9CA3AF] focus:outline-none focus:border-[#4A3728] focus:ring-2 focus:ring-[#4A3728]/10 transition-all"
+                    className={`w-full pl-4 pr-10 py-3 rounded-[14px] bg-[#FFFFFF] border text-xs text-[#343434] placeholder-[#9CA3AF] focus:outline-none transition-all ${
+                      fieldErrors.password
+                        ? 'border-[#A04E45] ring-2 ring-[#A04E45]/10'
+                        : 'border-[#E5DDD3] focus:border-[#4A3728] focus:ring-2 focus:ring-[#4A3728]/10'
+                    }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6A63] hover:text-[#343434]"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6A63] hover:text-[#343434] focus:outline-none"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
                 </div>
+                {fieldErrors.password && (
+                  <p className="text-[11px] text-[#A04E45] font-medium flex items-center gap-1">
+                    <AlertCircle className="w-3 h-3" />
+                    <span>{fieldErrors.password}</span>
+                  </p>
+                )}
               </div>
 
               {/* Remember Me Checkbox */}
@@ -192,11 +241,11 @@ export default function LoginPage() {
                 </label>
               </div>
 
-              {/* Submit Button */}
+              {/* Login Button with Loading Spinner */}
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-[16px] bg-[#4A3728] hover:bg-[#34261C] disabled:opacity-60 text-white font-bold text-xs uppercase tracking-wider shadow-espresso transition-all transform hover:-translate-y-0.5"
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-[16px] bg-[#4A3728] hover:bg-[#34261C] disabled:opacity-60 text-white font-bold text-xs uppercase tracking-wider shadow-espresso transition-all transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#4A3728]"
               >
                 {isLoading ? (
                   <>
@@ -265,7 +314,7 @@ export default function LoginPage() {
               ) : (
                 <form onSubmit={handleForgotSubmit} className="space-y-4">
                   <p className="text-xs text-[#6F6A63]">
-                    Enter your admin email address to receive password recovery instructions.
+                    Enter your registered admin email address to receive password recovery instructions.
                   </p>
                   <input
                     type="email"
