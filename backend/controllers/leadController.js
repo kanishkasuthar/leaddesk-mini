@@ -13,17 +13,17 @@ const createLead = asyncHandler(async (req, res) => {
 
   return res.status(201).json({
     success: true,
-    message: 'Lead captured successfully!',
+    message: 'Opportunity captured successfully.',
     data: newLead || { id: insertId, name, email, budget, message, status: 'New', created_at: new Date().toISOString() }
   });
 });
 
 // @desc    Retrieve all leads ordered by newest first
 // @route   GET /api/leads
-// @access  Public / Admin
+// @access  Admin (Protected)
 const getAllLeads = asyncHandler(async (req, res) => {
   const leads = await LeadModel.getAll();
-  return res.json({
+  return res.status(200).json({
     success: true,
     count: leads.length,
     data: leads
@@ -32,7 +32,7 @@ const getAllLeads = asyncHandler(async (req, res) => {
 
 // @desc    Update lead pipeline status
 // @route   PUT /api/leads/:id
-// @access  Admin
+// @access  Admin (Protected)
 const updateStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
@@ -40,7 +40,7 @@ const updateStatus = asyncHandler(async (req, res) => {
   if (!status || !ALLOWED_STATUSES.includes(status)) {
     return res.status(400).json({
       success: false,
-      message: `Invalid status. Allowed values: ${ALLOWED_STATUSES.join(', ')}`
+      message: `Invalid status. Allowed status options: ${ALLOWED_STATUSES.join(', ')}`
     });
   }
 
@@ -48,31 +48,31 @@ const updateStatus = asyncHandler(async (req, res) => {
   if (!updated) {
     return res.status(404).json({
       success: false,
-      message: `Lead #${id} not found.`
+      message: `Opportunity #${id} not found.`
     });
   }
 
   const updatedLead = await LeadModel.getById(id);
 
-  return res.json({
+  return res.status(200).json({
     success: true,
-    message: `Lead #${id} status updated to "${status}"`,
+    message: `Status for opportunity #${id} updated to "${status}".`,
     data: updatedLead
   });
 });
 
 // @desc    Search leads by term
 // @route   GET /api/leads/search
-// @access  Admin
+// @access  Admin (Protected)
 const searchLeads = asyncHandler(async (req, res) => {
   const queryStr = (req.query.q || '').trim();
   if (!queryStr) {
     const all = await LeadModel.getAll();
-    return res.json({ success: true, count: all.length, data: all });
+    return res.status(200).json({ success: true, count: all.length, data: all });
   }
 
   const leads = await LeadModel.search(queryStr);
-  return res.json({
+  return res.status(200).json({
     success: true,
     query: queryStr,
     count: leads.length,
@@ -82,10 +82,10 @@ const searchLeads = asyncHandler(async (req, res) => {
 
 // @desc    Get dashboard summary metrics
 // @route   GET /api/leads/stats
-// @access  Admin
+// @access  Admin (Protected)
 const getStats = asyncHandler(async (req, res) => {
   const stats = await LeadModel.getStats();
-  return res.json({
+  return res.status(200).json({
     success: true,
     data: stats
   });

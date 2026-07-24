@@ -1,9 +1,22 @@
 const ALLOWED_BUDGETS = [
   "Below ₹10,000",
   "₹10,000 - ₹25,000",
+  "₹10,000–₹25,000",
   "₹25,000 - ₹50,000",
+  "₹25,000–₹50,000",
   "Above ₹50,000"
 ];
+
+// Helper to sanitize strings and strip HTML/script tags
+function sanitizeInput(str) {
+  if (typeof str !== 'string') return '';
+  return str
+    .trim()
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
 
 function validateLead(req, res, next) {
   const { name, email, budget, message } = req.body;
@@ -41,16 +54,16 @@ function validateLead(req, res, next) {
   if (Object.keys(errors).length > 0) {
     return res.status(400).json({
       success: false,
-      message: 'Validation failed',
+      message: 'Validation failed. Please correct input errors.',
       errors
     });
   }
 
-  // Sanitize trimmed strings
-  req.body.name = name.trim();
+  // Sanitize input fields
+  req.body.name = sanitizeInput(name);
   req.body.email = email.trim().toLowerCase();
   req.body.budget = budget.trim();
-  req.body.message = message.trim();
+  req.body.message = sanitizeInput(message);
 
   next();
 }

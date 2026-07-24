@@ -10,16 +10,31 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// CORS configuration
+// Production CORS Configuration
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:5173'
+].filter(Boolean);
+
 app.use(cors({
-  origin: '*',
+  origin: (origin, callback) => {
+    // Allow non-browser calls (like mobile/Postman/curl) or whitelisted origins
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS policy violation: Origin not allowed.'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
 }));
 
 // Body Parser Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Request Logging Middleware
 app.use((req, res, next) => {
@@ -29,10 +44,10 @@ app.use((req, res, next) => {
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({
+  res.status(200).json({
     status: 'online',
     timestamp: new Date().toISOString(),
-    service: 'LeadDesk Mini Backend API'
+    service: 'LeadDesk Mini Backend Production API'
   });
 });
 
@@ -44,17 +59,18 @@ app.use('/api/leads', leadRoutes);
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: `API endpoint ${req.originalUrl} not found`
+    message: `API endpoint ${req.originalUrl} not found.`
   });
 });
 
-// Global Error Handler
+// Centralized Global Error Handler
 app.use((err, req, res, next) => {
   console.error('Unhandled Server Error:', err);
-  res.status(500).json({
+  const statusCode = err.statusCode || 500;
+  res.status(statusCode).json({
     success: false,
-    message: 'Internal server error occurred',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: err.message || 'Internal server error occurred.',
+    error: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });
 });
 
@@ -62,7 +78,7 @@ app.use((err, req, res, next) => {
 initDB().then(() => {
   app.listen(PORT, () => {
     console.log(`=======================================================`);
-    console.log(`🚀 LeadDesk Mini Server is running on port ${PORT}`);
+    console.log(`🚀 LeadDesk Mini Production Server running on port ${PORT}`);
     console.log(`🌐 Auth Endpoint: http://localhost:${PORT}/api/auth/login`);
     console.log(`🌐 Leads Endpoint: http://localhost:${PORT}/api/leads`);
     console.log(`=======================================================`);
