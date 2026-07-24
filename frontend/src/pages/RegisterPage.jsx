@@ -29,6 +29,26 @@ export default function RegisterPage() {
   const hasNumber = /[0-9]/.test(password);
   const hasSpecial = /[@$!%*#?&]/.test(password);
 
+  const criteriaCount = [hasMinLength, hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
+  
+  let strengthLabel = 'Weak';
+  let strengthColor = 'bg-[#A04E45]';
+  let strengthWidth = '20%';
+
+  if (criteriaCount === 5) {
+    strengthLabel = 'Strong';
+    strengthColor = 'bg-[#5E7A5D]';
+    strengthWidth = '100%';
+  } else if (criteriaCount >= 3) {
+    strengthLabel = 'Medium';
+    strengthColor = 'bg-[#CDAA7D]';
+    strengthWidth = `${(criteriaCount / 5) * 100}%`;
+  } else if (criteriaCount > 0) {
+    strengthWidth = `${(criteriaCount / 5) * 100}%`;
+  } else {
+    strengthWidth = '0%';
+  }
+
   // Persistent Session Check: Redirect logged-in admins straight to dashboard
   useEffect(() => {
     const existingToken = authService.getToken();
@@ -162,7 +182,8 @@ export default function RegisterPage() {
                   }}
                   placeholder="e.g. Executive Officer"
                   required
-                  className={`w-full px-4 py-3 rounded-[14px] bg-[#FFFFFF] border text-xs text-[#343434] placeholder-[#9CA3AF] focus:outline-none transition-all ${
+                  disabled={isLoading}
+                  className={`w-full px-4 py-3 rounded-[14px] bg-[#FFFFFF] border text-xs text-[#343434] placeholder-[#9CA3AF] focus:outline-none transition-all disabled:opacity-60 ${
                     fieldErrors.name
                       ? 'border-[#A04E45] ring-2 ring-[#A04E45]/10'
                       : 'border-[#E5DDD3] focus:border-[#4A3728] focus:ring-2 focus:ring-[#4A3728]/10'
@@ -192,7 +213,8 @@ export default function RegisterPage() {
                   }}
                   placeholder="name@company.com"
                   required
-                  className={`w-full px-4 py-3 rounded-[14px] bg-[#FFFFFF] border text-xs text-[#343434] placeholder-[#9CA3AF] focus:outline-none transition-all ${
+                  disabled={isLoading}
+                  className={`w-full px-4 py-3 rounded-[14px] bg-[#FFFFFF] border text-xs text-[#343434] placeholder-[#9CA3AF] focus:outline-none transition-all disabled:opacity-60 ${
                     fieldErrors.email
                       ? 'border-[#A04E45] ring-2 ring-[#A04E45]/10'
                       : 'border-[#E5DDD3] focus:border-[#4A3728] focus:ring-2 focus:ring-[#4A3728]/10'
@@ -223,7 +245,8 @@ export default function RegisterPage() {
                     }}
                     placeholder="••••••••••••"
                     required
-                    className={`w-full pl-4 pr-10 py-3 rounded-[14px] bg-[#FFFFFF] border text-xs text-[#343434] placeholder-[#9CA3AF] focus:outline-none transition-all ${
+                    disabled={isLoading}
+                    className={`w-full pl-4 pr-10 py-3 rounded-[14px] bg-[#FFFFFF] border text-xs text-[#343434] placeholder-[#9CA3AF] focus:outline-none transition-all disabled:opacity-60 ${
                       fieldErrors.password
                         ? 'border-[#A04E45] ring-2 ring-[#A04E45]/10'
                         : 'border-[#E5DDD3] focus:border-[#4A3728] focus:ring-2 focus:ring-[#4A3728]/10'
@@ -233,7 +256,8 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     aria-label={showPassword ? "Hide password" : "Show password"}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6A63] hover:text-[#343434] focus:outline-none"
+                    disabled={isLoading}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6A63] hover:text-[#343434] focus:outline-none disabled:opacity-50"
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -246,7 +270,21 @@ export default function RegisterPage() {
                 )}
               </div>
 
-              {/* Password Strength Rules Helper */}
+              {/* Password Strength Progress Bar & Rules Helper */}
+              {password.length > 0 && (
+                <div className="space-y-1 pt-0.5">
+                  <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-[#6F6A63]">
+                    <span>Password Strength</span>
+                    <span className={criteriaCount === 5 ? "text-[#5E7A5D]" : criteriaCount >= 3 ? "text-[#CDAA7D]" : "text-[#A04E45]"}>
+                      {strengthLabel}
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 rounded-full bg-[#E5DDD3] overflow-hidden">
+                    <div className={`h-full transition-all duration-300 ${strengthColor}`} style={{ width: strengthWidth }} />
+                  </div>
+                </div>
+              )}
+
               <div className="p-3 rounded-[12px] bg-[#F4EFE8] border border-[#E5DDD3] space-y-1 text-[11px]">
                 <p className="font-bold text-[#4A3728] text-[10px] uppercase tracking-wider">Password Requirements:</p>
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[#6F6A63]">
@@ -275,7 +313,8 @@ export default function RegisterPage() {
                     }}
                     placeholder="••••••••••••"
                     required
-                    className={`w-full pl-4 pr-10 py-3 rounded-[14px] bg-[#FFFFFF] border text-xs text-[#343434] placeholder-[#9CA3AF] focus:outline-none transition-all ${
+                    disabled={isLoading}
+                    className={`w-full pl-4 pr-10 py-3 rounded-[14px] bg-[#FFFFFF] border text-xs text-[#343434] placeholder-[#9CA3AF] focus:outline-none transition-all disabled:opacity-60 ${
                       fieldErrors.confirmPassword
                         ? 'border-[#A04E45] ring-2 ring-[#A04E45]/10'
                         : 'border-[#E5DDD3] focus:border-[#4A3728] focus:ring-2 focus:ring-[#4A3728]/10'
@@ -285,7 +324,8 @@ export default function RegisterPage() {
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6A63] hover:text-[#343434] focus:outline-none"
+                    disabled={isLoading}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#6F6A63] hover:text-[#343434] focus:outline-none disabled:opacity-50"
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -302,7 +342,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-[16px] bg-[#4A3728] hover:bg-[#34261C] disabled:opacity-60 text-white font-bold text-xs uppercase tracking-wider shadow-espresso transition-all transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#4A3728] mt-2"
+                className="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-[16px] bg-[#4A3728] hover:bg-[#34261C] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs uppercase tracking-wider shadow-espresso transition-all transform hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-[#4A3728] mt-2"
               >
                 {isLoading ? (
                   <>
