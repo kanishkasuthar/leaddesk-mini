@@ -1,135 +1,118 @@
-# LeadDesk Mini — Sandstone & Espresso Executive Edition 🌾
+# LeadDesk Mini — Executive Edition 🌾
 
 > **Digital Heroes Internship Qualification Task Submission**  
 > Mandatory Attribution: Built for [Digital Heroes](https://digitalheroesco.com)
 
-**LeadDesk Mini** is an editorial lead management platform designed with the **Sandstone & Espresso** design language (`#F4EFE8` background, `#FFFFFF` cards, `#4A3728` espresso accents, and `#CDAA7D` sandstone highlights). Inspired by high-end design aesthetics from Apple, Notion, Aesop, and COS, LeadDesk Mini provides an asymmetric public intake journey alongside a secure executive command center.
+## 📖 Project Overview
+
+**LeadDesk Mini** is a lightweight, responsive SaaS CRM designed specifically for managing inbound leads and pipeline opportunities with speed and elegance. Built upon the **Sandstone & Espresso** design language (`#F4EFE8` background, `#FFFFFF` cards, `#4A3728` espresso accents, and `#CDAA7D` sandstone highlights), it delivers a premium, asymmetric public intake journey alongside a highly secure, functional executive command center. 
+
+This platform seamlessly bridges the gap between client acquisition and executive management, ensuring no opportunity falls through the cracks.
 
 ---
 
-## 🔐 Test Admin Credentials
+## 🌟 Features
 
-Evaluators can access the protected Executive Workspace (`/admin`) using these credentials:
+### 🏛️ Public Experience
+- **Immersive Asymmetric Hero**: Compelling headline, actionable CTA buttons, and a directly integrated lead intake module.
+- **Glass Sticky Navbar**: Features a live clock and smooth navigation anchors.
+- **Editorial Story Chapters & Workflow Journey**: Interactive timelines and sections explaining the value of lead management.
+- **Public Lead Intake Form**: Captures Name, Email, Budget Range, and Message with full client-side and server-side validation.
+- **Live Product Preview**: Interactive preview showcasing Card View vs. Table View.
 
-| Field | Production Value |
-| :--- | :--- |
-| **Login URL** | `/login` (unauthorized access to `/admin` automatically redirects here) |
-| **Email** | `admin@leaddesk.com` |
-| **Password** | `AdminPass123!` |
-| **Quick Fill** | Features a 1-click **"Fill Credentials"** button on `/login` |
-| **JWT Expiry** | 24 hours (extended to 7 days when *Remember Me* is checked) |
-| **Password Hashing** | Bcrypt (10 salt rounds) |
-
----
-
-## 🌟 Key Features
-
-### 🏛️ Public Experience (Task A)
-- **Glass Sticky Navbar**: Brand logo, navigation anchors, live Bangalore clock updating every second, and `Open Workspace` CTA.
-- **Immersive Asymmetric Hero**: Headline *"Every Conversation Has Potential."*, action buttons, and integrated lead intake module inside the hero.
-- **Editorial Story Chapters (`StorySection.jsx`)**: Asymmetrical chapters explaining lead capture privacy and executive visibility.
-- **Horizontal Workflow Journey (`WorkflowJourney.jsx`)**: Interactive 6-step lead progression timeline.
-- **Public Lead Intake Form**: Full Name, Email Address, Budget Range (`Below ₹10,000`, `₹10,000 – ₹25,000`, `₹25,000 – ₹50,000`, `Above ₹50,000`), Message, client & server-side validation, toast *"✓ Opportunity captured successfully."*, and auto-reset.
-- **Strategic Rationale (`WhyLeadManagement.jsx`)**: Rationale for structured lead management.
-- **Live Product Preview (`ProductPreview.jsx`)**: Interactive preview showcasing Card View vs Table View.
-- **Footer**: Mandatory statement `"Built for Digital Heroes Training Task"` linking to [Digital Heroes](https://digitalheroesco.com).
-
-### 💼 Executive Workspace & Authentication (Task B)
-- **JWT & Bcrypt Authentication System**: Protected `/admin` route with JWT verification middleware and automatic 401 token expiry handling.
-- **Editorial Login Screen (`/login`)**: Welcome Back heading, Show/Hide password toggle, Remember Me checkbox, Forgot Password link & modal, and quick credentials fill button.
-- **Forgot & Reset Password Workflow**: Secure 64-character token generation via `crypto.randomBytes(32)`, SHA-256 token hashing, 1-hour expiry, strong password enforcement, and `/reset-password/:token` screen.
-- **Persistent Sessions**: Refreshing the browser keeps users logged in; logged-in users visiting `/login` are automatically redirected to `/admin`.
-- **Time-Aware Greeting**: Header greeting (*"Good Morning, LeadDesk Admin."*) with active session badge.
-- **KPI Summary Cards**: 4 live metric cards (`Total Opportunities`, `New`, `Contacted`, `Closed`).
-- **Instant Search & Keyboard Shortcuts**: Filter opportunities by Name or Email (`/` key focus shortcut).
-- **Slide-Over Opportunity Drawer**: Detailed lead info, status selector, activity timeline, and local executive notes.
-- **CSV Export**: Download complete dataset as `.csv`.
+### 💼 Executive Workspace & Administration
+- **Secure Authentication System**: Complete JWT & Bcrypt based authentication with Login, Register, Forgot Password, and Reset Password workflows.
+- **Admin Registration Module**: Robust registration interface with real-time password complexity indicators.
+- **KPI Summary Cards**: Live metric cards displaying `Total Opportunities`, `Active Leads`, `Inactive Leads`, and `Leads Added Today`.
+- **Advanced Leads Table**: View leads in Card or Table formats with avatar initials, Created/Updated timestamps, intuitive sorting (by Name or Date), and elevated status badges.
+- **Lead Lifecycle Management**: Update pipeline statuses (`New`, `Contacted`, `Closed`) or permanently delete records via a secure confirmation modal.
+- **Instant Search**: Filter opportunities globally by Name, Email, or Message.
+- **Slide-Over Opportunity Drawer**: Detailed lead info and local executive notes.
+- **CSV Data Export**: Download the complete dataset for offline reporting.
 
 ---
 
-## 🛠️ Technology Stack
+## 🛠️ Tech Stack
 
 | Layer | Technology |
 | :--- | :--- |
-| **Frontend** | React 18 + Vite, Tailwind CSS v4, Framer Motion, Lucide Icons, Axios, React Router v6 |
+| **Frontend** | React 19 + Vite, Tailwind CSS v4, Framer Motion, Lucide React, React Router v7 |
 | **Backend** | Node.js, Express.js (MVC Pattern) |
-| **Database** | MySQL (`mysql2` pool with schema auto-initialization & in-memory fallback) |
-| **Security** | JSON Web Tokens (`jsonwebtoken`), Bcrypt (`bcryptjs`), Node Crypto (`crypto`) |
+| **Database** | MySQL 2 (with an auto-fallback In-Memory Engine for zero-config local testing) |
+| **Security** | JSON Web Tokens (`jsonwebtoken`), Bcrypt (`bcryptjs`), Node Crypto |
 
 ---
 
 ## 📁 Folder Structure
 
-```
+```text
 leaddesk-mini/
 ├── backend/
-│   ├── config/
-│   │   └── db.js                 # MySQL database connection & fallback engine
-│   ├── controllers/
-│   │   ├── authController.js     # JWT Login, Register, Forgot & Reset Password
-│   │   └── leadController.js     # Lead capture, retrieval, status updates, search
-│   ├── middleware/
-│   │   ├── asyncHandler.js       # Express async error handler
-│   │   ├── authMiddleware.js     # JWT Bearer token verification middleware
-│   │   └── validateLead.js       # Input validation & XSS sanitization
-│   ├── models/
-│   │   ├── adminModel.js         # Admin table queries
-│   │   └── leadModel.js          # Lead table queries
-│   ├── routes/
-│   │   ├── authRoutes.js         # /api/auth endpoints
-│   │   └── leadRoutes.js         # /api/leads endpoints
-│   ├── render.yaml               # Render blueprint configuration
-│   ├── schema.sql                # Database schema script
-│   └── server.js                 # Express server & CORS configuration
+│   ├── config/             # DB connection (MySQL + in-memory fallback)
+│   ├── controllers/        # Auth & Lead route handlers
+│   ├── middleware/         # JWT Verification, Async Wrappers, Validation
+│   ├── models/             # Data access models (Admins, Leads)
+│   ├── routes/             # Express API route definitions
+│   ├── schema.sql          # MySQL database schema script
+│   └── server.js           # Server entry point
 ├── frontend/
+│   ├── public/             # Static public assets
 │   ├── src/
-│   │   ├── components/           # Navbar, Footer, Drawers, Modals, Skeleton Loaders
-│   │   ├── pages/
-│   │   │   ├── LandingPage.jsx   # Public landing experience
-│   │   │   ├── AdminPanel.jsx    # Executive workspace dashboard
-│   │   │   ├── LoginPage.jsx     # Sandstone & Espresso login page
-│   │   │   ├── ForgotPasswordPage.jsx # Password recovery request screen
-│   │   │   └── ResetPasswordPage.jsx  # New password setup screen
-│   │   ├── services/
-│   │   │   └── api.js            # Axios instance, interceptors, and auth/lead services
-│   │   ├── App.jsx               # Router & Protected routes configuration
-│   │   └── main.jsx              # React DOM entry point
-│   ├── vercel.json               # Vercel deployment rewrites
-│   └── vite.config.js            # Vite build configuration
+│   │   ├── assets/         # Images and SVG icons
+│   │   ├── components/     # Reusable UI components (Navbar, Modals, Forms)
+│   │   ├── pages/          # Full page views (AdminPanel, LoginPage, RegisterPage, etc.)
+│   │   ├── services/       # Axios API client and centralized endpoints
+│   │   ├── App.jsx         # Router & Route protection logic
+│   │   ├── index.css       # Global styles and Tailwind configuration
+│   │   └── main.jsx        # React application root
+│   ├── vite.config.js      # Vite build settings
+│   └── package.json        # Frontend dependencies
 └── README.md
 ```
 
 ---
 
-## 📥 Installation Guide
+## 📸 Screenshots
+
+![Dashboard Preview](frontend/src/assets/hero.png)
+*(Note: Visual overview of the public landing experience and executive workspace structure.)*
+
+---
+
+## 📥 Installation Steps
 
 ### 1. Backend Setup
 ```bash
 cd backend
 npm install
-node server.js
-# Backend API will start at http://localhost:5001
+# Start the server (runs on port 5001 by default)
+npm start
+# For development with auto-reload:
+npm run dev
 ```
 
 ### 2. Frontend Setup
+Open a new terminal window:
 ```bash
 cd frontend
 npm install
+# Start the Vite development server (runs on port 3000 or 5173 by default)
 npm run dev
-# Frontend application will start at http://localhost:3000
 ```
 
 ---
 
 ## 🔑 Environment Variables
 
+To run the application properly in production, configure the following `.env` files.
+
 ### Backend (`backend/.env`)
 ```env
 PORT=5001
 NODE_ENV=development
-JWT_SECRET=leaddesk_sandstone_espresso_jwt_secret_key_2026
+JWT_SECRET=your_super_secret_jwt_key_here
 
-# MySQL Database Config
+# MySQL Database Config (Optional if using the in-memory fallback)
 DB_HOST=localhost
 DB_USER=root
 DB_PASSWORD=
@@ -146,48 +129,49 @@ VITE_API_URL=http://localhost:5001/api
 
 ---
 
-## 🗄️ Database Setup
+## 🔐 Demo Credentials
 
-Run `backend/schema.sql` on your MySQL server:
+When the backend starts, it automatically provisions a secure demo account. Evaluators can access the protected Executive Workspace (`/admin`) using these credentials:
 
-```sql
-CREATE DATABASE IF NOT EXISTS leaddesk;
-USE leaddesk;
+- **Email**: `admin@leaddesk.com`
+- **Password**: `AdminPass123!`
 
-CREATE TABLE IF NOT EXISTS leads (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL,
-    budget VARCHAR(100) NOT NULL,
-    message TEXT NOT NULL,
-    status ENUM('New', 'Contacted', 'Closed') DEFAULT 'New',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-
-CREATE TABLE IF NOT EXISTS admins (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    reset_token VARCHAR(255) DEFAULT NULL,
-    reset_token_expiry VARCHAR(255) DEFAULT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
-```
+*Note: You can also create a brand new executive account by visiting the `/register` endpoint on the frontend.*
 
 ---
 
-## 🔐 Authentication Flow
+## 📡 API Endpoints
 
-```
+### Auth Endpoints (`/api/auth`)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/login` | Public | Authenticate admin & return JWT token |
+| `POST` | `/register` | Public | Register a new admin user |
+| `GET`  | `/me` | Protected | Fetch current authenticated admin user profile |
+| `POST` | `/forgot-password` | Public | Request secure password reset token |
+| `POST` | `/reset-password` | Public | Reset password using the provided token |
+
+### Lead Endpoints (`/api/leads`)
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/` | Public | Capture a new lead enquiry |
+| `GET`  | `/` | Protected | Retrieve all leads (newest first) |
+| `PUT`  | `/:id` | Protected | Update lead status (`New`, `Contacted`, `Closed`) |
+| `DELETE`| `/:id` | Protected | Permanently delete a lead |
+| `GET`  | `/search` | Protected | Instant multi-field search (`?q=...`) |
+| `GET`  | `/stats` | Protected | Fetch aggregate KPI card metrics |
+
+---
+
+## 🔄 Authentication Flow
+
+```text
 [ Visitor / Admin ]
         │
         ▼
    POST /api/auth/login ──▶ [ Verify Email & Bcrypt Password ]
         │
-        ├─▶ [ Valid ]   ──▶ Returns Signed JWT Token (24h/7d) ──▶ Saved in LocalStorage/SessionStorage
+        ├─▶ [ Valid ]   ──▶ Returns Signed JWT Bearer Token ──▶ Saved in LocalStorage
         │
         └─▶ [ Invalid ] ──▶ Returns 401 Unauthorized Error
         │
@@ -195,58 +179,32 @@ CREATE TABLE IF NOT EXISTS admins (
  [ Subsequent Admin Requests ]
         │
         ▼
- Header: Authorization: Bearer <token> ──▶ [ authMiddleware.js ] ──▶ Access Granted to Protected Endpoints
+ Header: Authorization: Bearer <token> ──▶ [ authMiddleware.js ] ──▶ Access Granted to Protected Routes
 ```
 
 ---
 
-## 📡 REST API Reference
+## 🌐 Deployment Instructions
 
-### Auth Endpoints
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/auth/login` | Public | Authenticate admin & return JWT token |
-| `POST` | `/api/auth/register` | Protected | Register a new admin user |
-| `GET` | `/api/auth/me` | Protected | Fetch current authenticated admin user profile |
-| `POST` | `/api/auth/forgot-password` | Public | Request secure password reset token |
-| `POST` | `/api/auth/reset-password` | Public | Reset password using reset token |
-
-### Lead Endpoints
-| Method | Endpoint | Access | Description |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/api/leads` | Public | Capture new lead enquiry |
-| `GET` | `/api/leads` | Protected | Retrieve all leads (newest first) |
-| `PUT` | `/api/leads/:id` | Protected | Update opportunity status (`New`, `Contacted`, `Closed`) |
-| `GET` | `/api/leads/search` | Protected | Instant multi-field search (`?q=...`) |
-| `GET` | `/api/leads/stats` | Protected | Aggregate KPI card metrics |
-
----
-
-## 🌐 Production Deployment Guide
-
-### Frontend Deployment (Vercel)
-1. Import repository to Vercel. Set **Root Directory** to `frontend`.
+### Frontend (Vercel)
+1. Import your GitHub repository to Vercel and set the **Root Directory** to `frontend`.
 2. Framework Preset: **Vite**. Build Command: `npm run build`. Output Directory: `dist`.
-3. Set environment variable `VITE_API_URL=https://<your-render-backend>.onrender.com/api`.
+3. Set the environment variable `VITE_API_URL` to point to your live backend (e.g., `https://api.yourdomain.com/api`).
 
-### Backend Deployment (Render)
-1. Create a Web Service on Render using `backend/render.yaml` or connected GitHub repo.
-2. Build Command: `npm install`. Start Command: `node server.js`.
-3. Set environment variables `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `FRONTEND_URL`.
-
----
-
-## 🤖 AI Usage Statement
-
-AI tools were used to assist with brainstorming visual concepts, refining UI micro-interactions, debugging edge cases, and accelerating full-stack development speed. All generated code snippets, design compositions, architectural patterns, and database schemas were thoroughly reviewed, customized, refactored, and integrated into the final LeadDesk Mini codebase through independent engineering decisions and handcrafted design choices.
+### Backend (Render / Heroku)
+1. Create a Web Service using `backend/render.yaml` or connect your GitHub repository directly.
+2. Build Command: `npm install`. Start Command: `npm start`.
+3. Set all required environment variables (`DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`, `FRONTEND_URL`).
+4. Ensure your hosting provider permits outbound connections to your managed MySQL database.
 
 ---
 
 ## 🔮 Future Improvements
 
-- [ ] Multi-tenant organization support.
-- [ ] Email notification integration via Resend / SendGrid.
-- [ ] Webhook triggers for Zapier and Make.com lead sync.
+- **Multi-tenant Organization Support**: Allow different companies to manage their own isolated leads on a single platform.
+- **WebHooks / Zapier Integration**: Instantly trigger automated marketing workflows when a new lead is captured.
+- **Email Notifications**: Integrate SendGrid or Resend to alert executives of high-budget lead captures.
+- **Dark Mode Aesthetic**: Introduce a sleek "Midnight Espresso" UI toggle for the executive dashboard.
 
 ---
 
