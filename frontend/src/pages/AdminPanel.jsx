@@ -25,13 +25,17 @@ import {
   ChevronRight,
   LogOut,
   UserCheck,
-  User,
   Clock,
   PlusCircle,
   Eye,
   Shield,
   Zap,
-  ArrowRight
+  ArrowRight,
+  Trash2,
+  Edit,
+  ArrowUpDown,
+  ArrowDown,
+  ArrowUp
 } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 10;
@@ -51,6 +55,10 @@ export default function AdminPanel() {
   const [updatingId, setUpdatingId] = useState(null);
   const [toast, setToast] = useState({ message: '', type: 'success' });
   const [lastLoginTime, setLastLoginTime] = useState('');
+
+  // Sorting state
+  const [sortField, setSortField] = useState('date'); // 'date' | 'name'
+  const [sortOrder, setSortOrder] = useState('desc'); // 'asc' | 'desc'
 
   // Current admin session
   const adminUser = authService.getAdmin();
@@ -78,6 +86,13 @@ export default function AdminPanel() {
     leadName: '',
     currentStatus: '',
     targetStatus: '',
+    isLoading: false
+  });
+
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    leadId: null,
+    leadName: '',
     isLoading: false
   });
 
@@ -169,7 +184,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchQuery, statusFilter]);
+  }, [searchQuery, statusFilter, sortField, sortOrder]);
 
   const requestStatusChange = (lead, newStatus) => {
     if (lead.status === newStatus) return;
@@ -196,9 +211,9 @@ export default function AdminPanel() {
           type: 'success'
         });
 
-        setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: targetStatus } : l));
+        setLeads(prev => prev.map(l => l.id === leadId ? { ...l, status: targetStatus, updated_at: new Date().toISOString() } : l));
         if (selectedLead && selectedLead.id === leadId) {
-          setSelectedLead(prev => ({ ...prev, status: targetStatus }));
+          setSelectedLead(prev => ({ ...prev, status: targetStatus, updated_at: new Date().toISOString() }));
         }
 
         const statsRes = await leadService.getStats();
@@ -222,6 +237,38 @@ export default function AdminPanel() {
         targetStatus: '',
         isLoading: false
       });
+    }
+  };
+
+  const requestDeleteLead = (e, lead) => {
+    e.stopPropagation();
+    setDeleteModal({
+      isOpen: true,
+      leadId: lead.id,
+      leadName: lead.name,
+      isLoading: false
+    });
+  };
+
+  const executeDeleteLead = async () => {
+    const { leadId } = deleteModal;
+    setDeleteModal(prev => ({ ...prev, isLoading: true }));
+    
+    try {
+      const response = await leadService.deleteLead(leadId);
+      if (response.success) {
+        setToast({ message: 'Opportunity removed successfully.', type: 'success' });
+        setLeads(prev => prev.filter(l => l.id !== leadId));
+        if (selectedLead && selectedLead.id === leadId) setSelectedLead(null);
+        
+        const statsRes = await leadService.getStats();
+        if (statsRes.success) setStats(statsRes.data);
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      setToast({ message: 'Failed to delete opportunity.', type: 'error' });
+    } finally {
+      setDeleteModal({ isOpen: false, leadId: null, leadName: '', isLoading: false });
     }
   };
 
@@ -252,7 +299,7 @@ export default function AdminPanel() {
   };
 
   const filteredLeads = useMemo(() => {
-    return leads.filter(lead => {
+    let result = leads.filter(lead => {
       if (statusFilter !== 'All' && lead.status !== statusFilter) {
         return false;
       }
@@ -266,11 +313,27 @@ export default function AdminPanel() {
       }
       return true;
     });
-  }, [leads, searchQuery, statusFilter]);
+
+    result.sort((a, b) => {
+      if (sortField === 'name') {
+        const nameA = a.name.toLowerCase();
+        const nameB = b.name.toLowerCase();
+        if (sortOrder === 'asc') return nameA.localeCompare(nameB);
+        return nameB.localeCompare(nameA);
+      } else {
+        const dateA = new Date(a.created_at).getTime();
+        const dateB = new Date(b.created_at).getTime();
+        if (sortOrder === 'asc') return dateA - dateB;
+        return dateB - dateA;
+      }
+    });
+
+    return result;
+  }, [leads, searchQuery, statusFilter, sortField, sortOrder]);
 
   // Latest 5 Recent Leads
   const recentLeads = useMemo(() => {
-    return leads.slice(0, 5);
+    return [...leads].sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).slice(0, 5);
   }, [leads]);
 
   const paginatedLeads = useMemo(() => {
@@ -294,14 +357,28 @@ export default function AdminPanel() {
     }
   };
 
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder(field === 'name' ? 'asc' : 'desc');
+    }
+  };
+
+  const getSortIcon = (field) => {
+    if (sortField !== field) return <ArrowUpDown className="w-3.5 h-3.5 text-[#6F6A63]/50" />;
+    return sortOrder === 'asc' ? <ArrowUp className="w-3.5 h-3.5 text-[#4A3728]" /> : <ArrowDown className="w-3.5 h-3.5 text-[#4A3728]" />;
+  };
+
   const getStatusBadgeClass = (status) => {
     switch (status) {
       case 'New':
-        return 'bg-[#CDAA7D]/20 text-[#4A3728] border-[#CDAA7D]/40';
+        return 'bg-amber-100 text-amber-800 border-amber-200';
       case 'Contacted':
-        return 'bg-[#5E7A5D]/20 text-[#344533] border-[#5E7A5D]/40';
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
       case 'Closed':
-        return 'bg-[#4A3728] text-white border-[#4A3728]';
+        return 'bg-[#4A3728] text-[#CDAA7D] border-[#34261C]';
       default:
         return 'bg-[#F4EFE8] text-[#6F6A63] border-[#E5DDD3]';
     }
@@ -325,6 +402,16 @@ export default function AdminPanel() {
         isLoading={confirmModal.isLoading}
         onConfirm={executeStatusChange}
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
+
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title="Delete Opportunity"
+        message={`Are you sure you want to permanently delete the opportunity for ${deleteModal.leadName}? This action cannot be undone.`}
+        targetStatus="Delete"
+        isLoading={deleteModal.isLoading}
+        onConfirm={executeDeleteLead}
+        onCancel={() => setDeleteModal(prev => ({ ...prev, isOpen: false }))}
       />
 
       <LeadDrawer
@@ -718,11 +805,17 @@ export default function AdminPanel() {
                         setSelectedLead(lead);
                         setIsDrawerOpen(true);
                       }}
-                      className="sandstone-card p-6 border border-[#E5DDD3] shadow-sandstone hover:border-[#4A3728]/40 cursor-pointer flex flex-col justify-between space-y-4 group transition-all"
+                      className="sandstone-card p-6 border border-[#E5DDD3] shadow-sandstone hover:border-[#4A3728]/40 cursor-pointer flex flex-col justify-between space-y-4 group transition-all relative"
                     >
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F6A63]">#{lead.id}</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-[#CDAA7D]/20 text-[#4A3728] font-bold flex items-center justify-center border border-[#CDAA7D]/40 text-xs">
+                              {lead.name ? lead.name.charAt(0).toUpperCase() : '?'}
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-[#6F6A63]">#{lead.id}</span>
+                          </div>
+                          
                           <select
                             value={lead.status}
                             disabled={updatingId === lead.id}
@@ -751,12 +844,36 @@ export default function AdminPanel() {
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-[#E5DDD3] flex items-center justify-between text-xs">
+                      <div className="pt-3 border-t border-[#E5DDD3] flex items-center justify-between text-xs mt-2">
                         <span className="font-bold text-[#4A3728]">{lead.budget}</span>
-                        <span className="text-[10px] text-[#6F6A63] flex items-center gap-1">
-                          <span>{formatDate(lead.created_at)}</span>
-                          <ChevronRight className="w-3.5 h-3.5 text-[#6F6A63] group-hover:translate-x-0.5 transition-transform" />
-                        </span>
+                        <div className="text-right">
+                          <div className="text-[10px] text-[#6F6A63]">Created: {formatDate(lead.created_at)}</div>
+                          {lead.updated_at && lead.updated_at !== lead.created_at && (
+                            <div className="text-[9px] text-[#6F6A63]/70">Updated: {formatDate(lead.updated_at)}</div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Hover Actions */}
+                      <div className="absolute top-6 right-6 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-[#E5DDD3] p-1">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedLead(lead);
+                            setIsDrawerOpen(true);
+                          }}
+                          className="p-1.5 text-[#5E7A5D] hover:bg-[#5E7A5D]/10 rounded-md transition-colors"
+                          title="Edit Lead"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={(e) => requestDeleteLead(e, lead)}
+                          className="p-1.5 text-[#A04E45] hover:bg-[#A04E45]/10 rounded-md transition-colors"
+                          title="Delete Lead"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -766,12 +883,20 @@ export default function AdminPanel() {
                   <table className="w-full text-left border-collapse text-xs">
                     <thead>
                       <tr className="bg-[#F4EFE8] border-b border-[#E5DDD3] text-[#6F6A63] font-bold uppercase tracking-wider">
-                        <th className="py-4 px-6">Name</th>
-                        <th className="py-4 px-6">Email</th>
-                        <th className="py-4 px-6">Budget</th>
+                        <th className="py-4 px-6 cursor-pointer hover:bg-[#E5DDD3]/50 transition-colors" onClick={() => handleSort('name')}>
+                          <div className="flex items-center gap-2">
+                            Name {getSortIcon('name')}
+                          </div>
+                        </th>
+                        <th className="py-4 px-6">Email / Budget</th>
                         <th className="py-4 px-6">Message</th>
-                        <th className="py-4 px-6">Date</th>
+                        <th className="py-4 px-6 cursor-pointer hover:bg-[#E5DDD3]/50 transition-colors" onClick={() => handleSort('date')}>
+                          <div className="flex items-center gap-2">
+                            Date {getSortIcon('date')}
+                          </div>
+                        </th>
                         <th className="py-4 px-6">Status</th>
+                        <th className="py-4 px-6 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[#E5DDD3]/60">
@@ -782,22 +907,34 @@ export default function AdminPanel() {
                             setSelectedLead(lead);
                             setIsDrawerOpen(true);
                           }}
-                          className="hover:bg-[#F4EFE8]/70 transition-colors cursor-pointer"
+                          className="hover:bg-[#F4EFE8]/70 transition-colors cursor-pointer group"
                         >
-                          <td className="py-4 px-6 font-heading font-bold text-sm text-[#343434]">
-                            {lead.name}
+                          <td className="py-4 px-6">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-[#CDAA7D]/20 text-[#4A3728] font-bold flex items-center justify-center border border-[#CDAA7D]/40 text-xs flex-shrink-0">
+                                {lead.name ? lead.name.charAt(0).toUpperCase() : '?'}
+                              </div>
+                              <div className="font-heading font-bold text-sm text-[#343434] group-hover:text-[#4A3728] transition-colors">
+                                {lead.name}
+                              </div>
+                            </div>
                           </td>
-                          <td className="py-4 px-6 text-[#6F6A63]">
-                            {lead.email}
+                          <td className="py-4 px-6">
+                            <div className="text-[#6F6A63] mb-1">{lead.email}</div>
+                            <div className="font-bold text-[#4A3728]">{lead.budget}</div>
                           </td>
-                          <td className="py-4 px-6 font-bold text-[#4A3728]">
-                            {lead.budget}
-                          </td>
-                          <td className="py-4 px-6 text-[#6F6A63] max-w-xs truncate" title={lead.message}>
+                          <td className="py-4 px-6 text-[#6F6A63] max-w-[200px] truncate" title={lead.message}>
                             {lead.message}
                           </td>
-                          <td className="py-4 px-6 text-[#6F6A63] text-[11px]">
-                            {formatDate(lead.created_at)}
+                          <td className="py-4 px-6">
+                            <div className="text-[#6F6A63] text-[11px] mb-1">
+                              <span className="font-semibold">Created:</span> {formatDate(lead.created_at)}
+                            </div>
+                            {lead.updated_at && lead.updated_at !== lead.created_at && (
+                              <div className="text-[10px] text-[#6F6A63]/70">
+                                <span className="font-semibold">Updated:</span> {formatDate(lead.updated_at)}
+                              </div>
+                            )}
                           </td>
                           <td className="py-4 px-6" onClick={(e) => e.stopPropagation()}>
                             <select
@@ -810,6 +947,28 @@ export default function AdminPanel() {
                               <option value="Contacted">Contacted</option>
                               <option value="Closed">Closed</option>
                             </select>
+                          </td>
+                          <td className="py-4 px-6 text-right">
+                            <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedLead(lead);
+                                  setIsDrawerOpen(true);
+                                }}
+                                className="p-1.5 text-[#5E7A5D] hover:bg-[#5E7A5D]/10 rounded-md transition-colors"
+                                title="Edit Lead"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={(e) => requestDeleteLead(e, lead)}
+                                className="p-1.5 text-[#A04E45] hover:bg-[#A04E45]/10 rounded-md transition-colors"
+                                title="Delete Lead"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))}

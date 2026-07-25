@@ -126,6 +126,12 @@ export const leadService = {
     return response.data;
   },
 
+  // DELETE /api/leads/:id - Delete lead
+  deleteLead: async (id) => {
+    const response = await api.delete(`/leads/${id}`);
+    return response.data;
+  },
+
   // GET /api/leads/search?q=... - Search leads
   searchLeads: async (query) => {
     const response = await api.get('/leads/search', {

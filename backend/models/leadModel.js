@@ -31,6 +31,13 @@ class LeadModel {
     return result.affectedRows > 0;
   }
 
+  // Delete lead by ID
+  static async delete(id) {
+    const sql = `DELETE FROM leads WHERE id = ?`;
+    const result = await query(sql, [id]);
+    return result.affectedRows > 0;
+  }
+
   // Search leads by name, email, or message
   static async search(term) {
     const pattern = `%${term}%`;

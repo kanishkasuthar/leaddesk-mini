@@ -4,6 +4,7 @@ const {
   createLead,
   getAllLeads,
   updateStatus,
+  deleteLead,
   searchLeads,
   getStats
 } = require('../controllers/leadController');
@@ -18,5 +19,6 @@ router.get('/', authMiddleware, getAllLeads);
 router.get('/stats', authMiddleware, getStats);
 router.get('/search', authMiddleware, searchLeads);
 router.put('/:id', authMiddleware, updateStatus);
+router.delete('/:id', authMiddleware, deleteLead);
 
 module.exports = router;

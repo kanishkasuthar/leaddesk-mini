@@ -61,6 +61,25 @@ const updateStatus = asyncHandler(async (req, res) => {
   });
 });
 
+// @desc    Delete lead
+// @route   DELETE /api/leads/:id
+// @access  Admin (Protected)
+const deleteLead = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const deleted = await LeadModel.delete(id);
+  if (!deleted) {
+    return res.status(404).json({
+      success: false,
+      message: `Opportunity #${id} not found.`
+    });
+  }
+
+  return res.status(200).json({
+    success: true,
+    message: `Opportunity #${id} removed successfully.`
+  });
+});
+
 // @desc    Search leads by term
 // @route   GET /api/leads/search
 // @access  Admin (Protected)
@@ -95,6 +114,7 @@ module.exports = {
   createLead,
   getAllLeads,
   updateStatus,
+  deleteLead,
   searchLeads,
   getStats
 };
