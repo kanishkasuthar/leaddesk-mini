@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Search, LayoutGrid, List, CheckCircle, Sparkles, PhoneCall, Inbox } from 'lucide-react';
+
 
 export default function ProductPreview() {
   const [activeTab, setActiveTab] = useState('Cards');

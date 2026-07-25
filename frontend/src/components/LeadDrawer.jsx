@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Mail, DollarSign, Calendar, MessageSquare, CheckCircle, Clock, FileText, Send, User } from 'lucide-react';
+import { X, Mail, DollarSign, Calendar, MessageSquare } from 'lucide-react';
 
 export default function LeadDrawer({ lead, isOpen, onClose, onStatusChange }) {
   const [notes, setNotes] = useState('');

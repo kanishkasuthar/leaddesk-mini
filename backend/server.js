@@ -7,7 +7,7 @@ const { initDB } = require('./config/db');
 const leadRoutes = require('./routes/leadRoutes');
 const authRoutes = require('./routes/authRoutes');
 
-console.log(`✓ dotenv loaded`);
+console.info(`✓ dotenv loaded`);
 
 const app = express();
 let PORT = parseInt(process.env.PORT || '5001', 10);
@@ -39,7 +39,7 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Request Logging Middleware
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  console.info(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   next();
 });
 
@@ -54,12 +54,12 @@ app.get('/health', (req, res) => {
 
 // Mount Routes
 app.use('/api/auth', authRoutes);
-console.log(`✓ Authentication routes registered (/api/auth)`);
+console.info(`✓ Authentication routes registered (/api/auth)`);
 
 app.use('/api/leads', leadRoutes);
-console.log(`✓ Lead management routes registered (/api/leads)`);
+console.info(`✓ Lead management routes registered (/api/leads)`);
 
-console.log(`✓ JWT initialized`);
+console.info(`✓ JWT initialized`);
 
 // 404 Not Found Handler
 app.use((req, res) => {
@@ -83,11 +83,11 @@ app.use((err, req, res, next) => {
 // Start Server with Graceful Port Conflict Handling
 function startServer(portToTry) {
   const server = app.listen(portToTry, () => {
-    console.log(`=======================================================`);
-    console.log(`✓ Server running on port ${portToTry}`);
-    console.log(`🌐 Auth Endpoint: http://localhost:${portToTry}/api/auth/login`);
-    console.log(`🌐 Leads Endpoint: http://localhost:${portToTry}/api/leads`);
-    console.log(`=======================================================`);
+    console.info(`=======================================================`);
+    console.info(`✓ Server running on port ${portToTry}`);
+    console.info(`🌐 Auth Endpoint: http://localhost:${portToTry}/api/auth/login`);
+    console.info(`🌐 Leads Endpoint: http://localhost:${portToTry}/api/leads`);
+    console.info(`=======================================================`);
   });
 
   server.on('error', (err) => {

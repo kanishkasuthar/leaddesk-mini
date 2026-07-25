@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
         });
       }
     } catch (err) {
-      console.error('Forgot password error:', err);
+
       const serverMsg = err.response?.data?.message || 'Failed to process request. Please try again.';
       setErrorMsg(serverMsg);
     } finally {

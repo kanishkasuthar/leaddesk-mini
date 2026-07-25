@@ -145,7 +145,7 @@ export default function AdminPanel() {
         setStats(statsRes.data || { total: 0, activeCount: 0, inactiveCount: 0, todayCount: 0 });
       }
     } catch (error) {
-      console.error('Error fetching admin data:', error);
+
       if (error.response?.status === 401) {
         setToast({ message: 'Session expired. Redirecting to login...', type: 'error' });
         authService.logout();
@@ -222,7 +222,7 @@ export default function AdminPanel() {
         }
       }
     } catch (error) {
-      console.error('Status update error:', error);
+
       setToast({
         message: 'Failed to update status in database.',
         type: 'error'
@@ -265,7 +265,7 @@ export default function AdminPanel() {
         if (statsRes.success) setStats(statsRes.data);
       }
     } catch (error) {
-      console.error('Delete error:', error);
+
       setToast({ message: 'Failed to delete opportunity.', type: 'error' });
     } finally {
       setDeleteModal({ isOpen: false, leadId: null, leadName: '', isLoading: false });

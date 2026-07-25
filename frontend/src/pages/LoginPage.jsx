@@ -89,7 +89,7 @@ export default function LoginPage() {
         navigate(from, { replace: true });
       }
     } catch (err) {
-      console.error('Login error:', err);
+
       const serverMsg = err.response?.data?.message || 'Invalid email or password. Please verify credentials.';
       setErrorMsg(serverMsg);
     } finally {

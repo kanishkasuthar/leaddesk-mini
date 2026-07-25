@@ -62,7 +62,7 @@ export default function ResetPasswordPage() {
         }, 2000);
       }
     } catch (err) {
-      console.error('Reset password error:', err);
+
       const serverMsg = err.response?.data?.message || 'Invalid or expired password reset link. Please request a new one.';
       setErrorMsg(serverMsg);
     } finally {

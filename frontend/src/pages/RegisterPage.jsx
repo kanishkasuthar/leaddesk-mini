@@ -115,7 +115,7 @@ export default function RegisterPage() {
         }, 1800);
       }
     } catch (err) {
-      console.error('Registration error:', err);
+
       const serverMsg = err.response?.data?.message || 'Failed to create admin account. Please try again.';
       setErrorMsg(serverMsg);
     } finally {

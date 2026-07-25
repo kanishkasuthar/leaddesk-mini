@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Sparkles, LayoutDashboard, Send, User, Mail, DollarSign, MessageSquare, AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Sparkles, LayoutDashboard, Send, User, Mail, DollarSign, MessageSquare, AlertCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { leadService } from '../services/api';
 import Toast from './Toast';
